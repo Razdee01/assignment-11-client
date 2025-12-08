@@ -25,7 +25,7 @@ const winners = [
 
 const WinnerSection = () => {
   return (
-    <section className="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-16 px-4">
+    <section className="bg-linear-to-r from-purple-500 to-pink-500 text-white py-16 px-4">
       <div className="max-w-7xl mx-auto text-center">
         <h2 className="text-4xl md:text-5xl font-bold mb-4">
           Celebrate Our Recent Winners
