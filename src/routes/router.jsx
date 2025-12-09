@@ -2,8 +2,9 @@ import { createBrowserRouter } from "react-router";
 import Rootlayout from "../layouts/Rootlayout";
 import Home from "../pages/Home";
 import AllContests from "../pages/AllContests";
-import ContactUs from "../pages/ContactUs";
+import ContactUs from "../pages/HowItWorks";
 import Error from "../components/Error";
+import HowItWorks from "../pages/HowItWorks";
 
 export const router = createBrowserRouter([
   {
@@ -13,7 +14,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "contests", element: <AllContests /> },
-      { path: "contact", element: <ContactUs /> },
+      { path: "how-it-works", element: <HowItWorks /> },
     ],
   },
 ]);

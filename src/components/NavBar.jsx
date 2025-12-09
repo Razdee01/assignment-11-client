@@ -96,12 +96,12 @@ const NavBar = () => {
 
           <li>
             <NavLink
-              to="/contact"
+              to="/how-it-works"
               className={({ isActive }) =>
                 isActive ? "text-primary font-bold" : "font-semibold"
               }
             >
-              Contact Us
+             How It Works
             </NavLink>
           </li>
         </ul>

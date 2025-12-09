@@ -1,32 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import axios from "axios";
-import { useState } from "react";
 
-const AllContests = () => {
+const PopularContests = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("All");
 
-  // 1. Fetch all contests
+  // 1. Fetch API with TanStack Query
   const { data: contests = [], isLoading } = useQuery({
-    queryKey: ["all-contests"],
+    queryKey: ["popular-contests"],
     queryFn: async () => {
-      const res = await axios.get("http://localhost:3000/all-contests");
+      const res = await axios.get("http://localhost:3000/popular-contests");
       return res.data;
     },
   });
 
-  // 2. Extract unique contest types for tabs
-  const contestTypes = ["All", ...new Set(contests.map((c) => c.contentType))];
+  // 2. Simulated login check (replace with real auth context)
+  const user = null; // <--- replace using: const { user } = useAuth();
 
-  // 3. Filter contests by active tab
-  const filteredContests =
-    activeTab === "All"
-      ? contests
-      : contests.filter((c) => c.contentType === activeTab);
-
-  // 4. Simulated login check (replace with real auth)
-  const user = null; // replace with auth context: const { user } = useAuth();
+  if (isLoading) {
+    return (
+      <p className="text-center py-10 text-xl font-semibold">Loading...</p>
+    );
+  }
 
   const handleDetails = (id) => {
     if (!user) {
@@ -36,36 +31,20 @@ const AllContests = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <p className="text-center py-10 text-xl font-semibold">Loading...</p>
-    );
-  }
-
   return (
     <div className="w-11/12 mx-auto py-10">
-      <h2 className="text-3xl font-bold mb-6">All Contests</h2>
-
-      {/* Tabs */}
-      <div className="flex gap-4 mb-6 flex-wrap">
-        {contestTypes.map((type) => (
-          <button
-            key={type}
-            onClick={() => setActiveTab(type)}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === type
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-800"
-            }`}
-          >
-            {type}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold">🔥 Popular Contests</h2>
+        <Link to="/all-contests">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            Show All
           </button>
-        ))}
+        </Link>
       </div>
 
-      {/* Contests Grid */}
+      {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredContests.map((contest) => (
+        {contests.map((contest) => (
           <div
             key={contest._id}
             className="border rounded-xl shadow-md p-4 bg-white"
@@ -99,4 +78,4 @@ const AllContests = () => {
   );
 };
 
-export default AllContests;
+export default PopularContests;
