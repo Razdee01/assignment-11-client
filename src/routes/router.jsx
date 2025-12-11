@@ -5,6 +5,8 @@ import AllContests from "../pages/AllContests";
 import ContactUs from "../pages/HowItWorks";
 import Error from "../components/Error";
 import HowItWorks from "../pages/HowItWorks";
+import Login from "../pages/Login";
+import Registration from "../pages/Registration";
 
 export const router = createBrowserRouter([
   {
@@ -15,6 +17,8 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "contests", element: <AllContests /> },
       { path: "how-it-works", element: <HowItWorks /> },
+      { path: "/login", element: <Login /> },
+      { path: "/registration", element: <Registration /> },
     ],
   },
 ]);

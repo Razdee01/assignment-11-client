@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import axios from "axios";
 import { useState } from "react";
 
@@ -88,7 +88,7 @@ const AllContests = () => {
 
             <button
               onClick={() => handleDetails(contest._id)}
-              className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg"
+              className="mt-4 w-full bg-green-500 text-white py-2 rounded-lg"
             >
               Details
             </button>

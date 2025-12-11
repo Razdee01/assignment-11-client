@@ -35,7 +35,7 @@ const PopularContests = () => {
     <div className="w-11/12 mx-auto py-10">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">🔥 Popular Contests</h2>
-        <Link to="/all-contests">
+        <Link to="/contests">
           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">
             Show All
           </button>
