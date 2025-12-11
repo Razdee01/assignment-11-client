@@ -7,12 +7,13 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/firebase.config";
 import Swal from "sweetalert2";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
 
  const Login=()=> {
   const navigate = useNavigate();
+  const location=useLocation();
   const {
     register,
     handleSubmit,
@@ -23,7 +24,7 @@ import Footer from "../components/Footer";
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       Swal.fire({ icon: "success", title: "Login Successful!" });
-      navigate("/");
+      navigate(location?.state || "/");
     } catch (err) {
       Swal.fire({ icon: "error", title: "Login Failed", text: err.message });
     }
@@ -34,7 +35,7 @@ import Footer from "../components/Footer";
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       Swal.fire({ icon: "success", title: "Logged in with Google!" });
-      navigate("/");
+      navigate(location?.state || "/");;
     } catch (err) {
       Swal.fire({
         icon: "error",

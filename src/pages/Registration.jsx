@@ -5,9 +5,11 @@ import { GoogleAuthProvider, } from "firebase/auth";
 import Swal from "sweetalert2";
 import { Link, useNavigate } from "react-router";
 import { AuthContext } from "../contexts/AuthContext";
+import axios from "axios";
 
 const Registration = () => {
-    const { createUser, googleSignIn } = useContext(AuthContext);
+    const { createUser, googleSignIn, updateUserProfile } =
+      useContext(AuthContext);
     const navigate = useNavigate();
   const {
     register,
@@ -20,13 +22,29 @@ const Registration = () => {
   const onSubmit = (data) => {
     setError("");
     setSuccess("");
+    const profileImg = data.photo[0];
+  
 
     if (data.password.length < 6) {
       return setError("Password must be at least 6 characters!");
     }
     createUser(data.email, data.password)
     .then(() => {
-    
+        const formData = new FormData();
+        formData.append("image", profileImg);
+        const imgbbApiKey = `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_image_host}`;
+        axios.post(imgbbApiKey, formData)
+          .then((res) => {
+            const imgURL = res.data.data.display_url;
+           console.log(imgURL);
+           const userProfile={
+            displayName: data.name,
+            photoURL: imgURL
+           }
+              updateUserProfile(userProfile)
+                .then(() => {})
+                .catch((err) => console.log(err));
+          })
       Swal.fire({
         icon: "success",
         title: "Registration Successful!",
