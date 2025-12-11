@@ -1,8 +1,33 @@
-import React from "react";
-import { NavLink } from "react-router";
+import React, {  useContext } from "react";
+import { Link, NavLink, useNavigate } from "react-router";
 import FullLogo from "../assets/FullLogo.png";
+import { AuthContext } from "../contexts/AuthContext";
+import Swal from "sweetalert2";
 
 const NavBar = () => {
+  const navigate = useNavigate();
+  const { user,logOut } = useContext(AuthContext);
+  const handleLogout=()=>{
+    logOut()
+      .then(() => {
+        Swal.fire({
+          icon: "success",
+          title: "Logged out!",
+          text: "You have been logged out successfully.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        navigate("/");
+      })
+      .catch((err) => {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Something went wrong!",
+        });
+        console.log(err);
+      });
+  }
   return (
     <div className="navbar bg-base-100 shadow-sm">
       <div className="navbar-start">
@@ -101,14 +126,28 @@ const NavBar = () => {
                 isActive ? "text-primary font-bold" : "font-semibold"
               }
             >
-             How It Works
+              How It Works
             </NavLink>
           </li>
         </ul>
       </div>
 
       <div className="navbar-end">
-        <a className="btn">Login</a>
+        {user ? (
+          <button
+            onClick={handleLogout}
+            className="btn btn-outline btn-primary"
+          >
+            Logout
+          </button>
+        ) : (
+          <div>
+            
+            <Link to={"/login"} className="btn">
+              Login
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
