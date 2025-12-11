@@ -56,7 +56,7 @@ export default function HeroBanner() {
               "Logo Design",
               "Article Writing",
               "Photography",
-              "Gaming",
+              "Gaming Review",
               "Business Idea",
             ].map((tag) => (
               <span
