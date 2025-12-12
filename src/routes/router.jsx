@@ -8,6 +8,7 @@ import HowItWorks from "../pages/HowItWorks";
 import Login from "../pages/Login";
 import Registration from "../pages/Registration";
 import DashBoard from "../pages/DashBoard";
+import ContestDetails from "../pages/ContestDetails";
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/registration", element: <Registration /> },
       { path: "/dashboard", element: <DashBoard /> },
+      { path: "/contest-details/:id", element: <ContestDetails />}
     ],
   },
 ]);

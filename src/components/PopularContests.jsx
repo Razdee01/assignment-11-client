@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import axios from "axios";
+import Loading from "../loading/Loading";
+
+import { AuthContext } from "../contexts/AuthContext";
 
 const PopularContests = () => {
-  const navigate = useNavigate();
+
 
   // 1. Fetch API with TanStack Query
   const { data: contests = [], isLoading } = useQuery({
@@ -14,22 +17,13 @@ const PopularContests = () => {
     },
   });
 
-  // 2. Simulated login check (replace with real auth context)
-  const user = null; // <--- replace using: const { user } = useAuth();
+
 
   if (isLoading) {
-    return (
-      <p className="text-center py-10 text-xl font-semibold">Loading...</p>
-    );
+    return <Loading />;
   }
 
-  const handleDetails = (id) => {
-    if (!user) {
-      navigate("/login");
-    } else {
-      navigate(`/contest/${id}`);
-    }
-  };
+
 
   return (
     <div className="w-11/12 mx-auto py-10">
@@ -65,12 +59,13 @@ const PopularContests = () => {
               <span className="text-blue-600">{contest.participants ?? 0}</span>
             </p>
 
-            <button
-              onClick={() => handleDetails(contest._id)}
-              className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg"
+            <Link
+              to={`contest-details/${contest._id}`}
+             
+              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg"
             >
-              Details
-            </button>
+              View Details
+            </Link>
           </div>
         ))}
       </div>

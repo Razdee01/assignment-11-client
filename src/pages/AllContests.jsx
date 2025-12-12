@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import axios from "axios";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { AuthContext } from "../contexts/AuthContext";
+import Loading from "../loading/Loading";
 
 const AllContests = () => {
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ const AllContests = () => {
       : contests.filter((c) => c.contentType === activeTab);
 
   // 4. Simulated login check (replace with real auth)
-  const user = null; // replace with auth context: const { user } = useAuth();
+  const user = useContext(AuthContext); // replace with auth context: const { user } = useAuth();
 
   const handleDetails = (id) => {
     if (!user) {
@@ -37,9 +39,7 @@ const AllContests = () => {
   };
 
   if (isLoading) {
-    return (
-      <p className="text-center py-10 text-xl font-semibold">Loading...</p>
-    );
+   return <Loading />;
   }
 
   return (
