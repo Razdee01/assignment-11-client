@@ -1,37 +1,36 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useParams } from "react-router";
 import Swal from "sweetalert2";
 
-const ContestDetails = () => {
+export default function ContestDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [contest, setContest] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [taskText, setTaskText] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRegistered, setIsRegistered] = useState(false);
+ 
+  const [countdown, setCountdown] = useState("");
 
-  // Fetch contest
+  // Fetch contest data
   useEffect(() => {
     axios.get(`http://localhost:3000/contests/${id}`).then((res) => {
       setContest(res.data);
-      setLoading(false);
+      setIsLoading(false);
     });
   }, [id]);
 
-  // Live countdown
+  // Live Countdown Timer
   useEffect(() => {
     if (!contest) return;
 
     const interval = setInterval(() => {
-      const now = new Date();
-      const deadline = new Date(contest.deadline);
+      const now = new Date().getTime();
+      const deadline = new Date(contest.deadline).getTime();
       const diff = deadline - now;
 
       if (diff <= 0) {
-        setTimeLeft("Contest Ended");
+        setCountdown("Contest Ended");
         clearInterval(interval);
         return;
       }
@@ -41,128 +40,127 @@ const ContestDetails = () => {
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
       const seconds = Math.floor((diff / 1000) % 60);
 
-      setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [contest]);
 
-  if (loading) return <p className="text-center py-10">Loading...</p>;
+  const isEnded = countdown === "Contest Ended";
 
-  const handleRegister = () => {
-    if (timeLeft === "Contest Ended") return;
+  // Submit Task Handler
+  const handleTaskSubmit = async () => {
+    const { value: taskLink } = await Swal.fire({
+      title: "Submit Your Task",
+      input: "textarea",
+      inputLabel: "Paste your work link (Drive / GitHub / Image / Article)",
+      inputPlaceholder: "Enter your submission link here...",
+      inputAttributes: {
+        "aria-label": "Task Submission",
+      },
+      showCancelButton: true,
+    });
 
-    navigate(`/payment/${id}`);
+    if (!taskLink) return;
+
+    await axios.post("http://localhost:3000/submit-task", {
+      contestId: id,
+      taskLink,
+      userEmail: "user@gmail.com", // replace with real user email
+    });
+
+    Swal.fire("Success!", "Your task has been submitted.", "success");
   };
 
-  const openTaskSubmit = () => {
-    setShowModal(true);
-  };
-
-  const submitTask = () => {
-    if (!taskText.trim()) {
-      return Swal.fire({ icon: "error", title: "Task cannot be empty" });
-    }
-
-    Swal.fire({ icon: "success", title: "Task Submitted Successfully!" });
-    setShowModal(false);
-    setTaskText("");
-  };
+  if (isLoading) return <p className="text-center py-20">Loading...</p>;
 
   return (
     <div className="w-11/12 mx-auto py-10">
+      {/* Banner */}
       <img
         src={contest.bannerImage}
         alt={contest.name}
-        className="w-full h-72 object-cover rounded-xl"
+        className="w-full h-72 object-cover rounded-xl shadow"
       />
 
+      {/* Title */}
       <h1 className="text-4xl font-bold mt-6">{contest.name}</h1>
 
       {/* Countdown */}
-      <p className="text-lg mt-2 font-semibold text-red-600">⏳ {timeLeft}</p>
-
-      <p className="mt-4 text-gray-700 leading-relaxed">
-        {contest.description}
-      </p>
-      <p className="mt-4 text-gray-700 leading-relaxed font-semibold">
-        Task: {contest.taskDetails}
-      </p>
-
-      <p className="text-xl mt-4 font-bold text-green-700">
-        Prize: {contest.prizeMoney}
+      <p
+        className={`text-xl font-semibold mt-2 ${
+          isEnded ? "text-red-600" : "text-green-600"
+        }`}
+      >
+        {isEnded ? "Contest Ended" : `⏳ Time Left: ${countdown}`}
       </p>
 
-      <p className="mt-2 text-lg font-medium">
-        Participants:{" "}
-        <span className="text-blue-600">{contest.participantsCount}</span>
-      </p>
-
-      {contest.winner && (
-        <div className="mt-6 p-4 bg-green-100 rounded-lg">
-          <h3 className="font-bold text-xl">Winner</h3>
-          <img
-            src={contest.winner.photo}
-            alt={contest.winner.name}
-            className="w-24 h-24 rounded-full mt-3"
-          />
-          <p className="text-lg font-semibold mt-2">{contest.winner.name}</p>
-        </div>
-      )}
-
-      {/* Buttons */}
-      <div className="flex gap-4 mt-6">
-        <button
-          onClick={handleRegister}
-          disabled={timeLeft === "Contest Ended"}
-          className={`px-6 py-3 rounded-lg text-white ${
-            timeLeft === "Contest Ended" ? "bg-gray-400" : "bg-blue-600"
-          }`}
-        >
-          Register / Pay
-        </button>
-
-        <button
-          onClick={openTaskSubmit}
-          className="px-6 py-3 bg-purple-600 text-white rounded-lg"
-        >
-          Submit Task
-        </button>
+      {/* Stats */}
+      <div className="mt-4 text-lg">
+        <p>
+          <strong>Participants:</strong> {contest.participants}
+        </p>
+        <p>
+          <strong>Prize:</strong> {contest.prizeMoney} BDT ({contest.prizeType})
+        </p>
       </div>
 
-      {/* Task Submit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h3 className="text-xl font-bold mb-3">Submit Task</h3>
+      {/* Description */}
+      <div className="mt-6 bg-gray-100 p-5 rounded-lg">
+        <h2 className="text-2xl font-bold mb-2">Description</h2>
+        <p>{contest.description}</p>
+      </div>
 
-            <textarea
-              className="border p-2 w-full h-32 rounded"
-              placeholder="Enter task details or links..."
-              value={taskText}
-              onChange={(e) => setTaskText(e.target.value)}
-            ></textarea>
+      {/* Task Details */}
+      <div className="mt-6 bg-gray-100 p-5 rounded-lg">
+        <h2 className="text-2xl font-bold mb-2">Task Details</h2>
+        <p>{contest.taskDetails}</p>
+      </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-400 text-white rounded"
-              >
-                Cancel
-              </button>
+      {/* Winner Section */}
+      <div className="mt-8 p-5 bg-white rounded-xl shadow">
+        <h2 className="text-2xl font-bold mb-4">Winner</h2>
 
-              <button
-                onClick={submitTask}
-                className="px-4 py-2 bg-green-600 text-white rounded"
-              >
-                Submit
-              </button>
-            </div>
+        {contest.winner?.name ? (
+          <div className="flex items-center gap-4">
+            <img
+              src={contest.winner.photo}
+              alt="winner"
+              className="w-20 h-20 rounded-full object-cover border"
+            />
+            <p className="text-xl font-semibold">{contest.winner.name}</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-gray-500 italic">Winner not declared yet.</p>
+        )}
+      </div>
+
+      {/* Register Button */}
+      <button
+        disabled={isEnded}
+        onClick={() => {
+          setIsRegistered(true);
+          Swal.fire("Registered!", "Payment Successful.", "success");
+        }}
+        className={`w-full mt-6 py-3 text-white rounded-xl text-lg font-semibold ${
+          isEnded ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        {isEnded ? "Contest Ended" : "Register"}
+      </button>
+
+      {/* Submit Task Button */}
+      <button
+        disabled={isEnded || !isRegistered}
+        onClick={handleTaskSubmit}
+        className={`w-full mt-4 py-3 text-white rounded-xl text-lg font-semibold ${
+          isEnded || !isRegistered
+            ? "bg-gray-400"
+            : "bg-green-600 hover:bg-green-700"
+        }`}
+      >
+        Submit Task
+      </button>
     </div>
   );
-};
-
-export default ContestDetails;
+}

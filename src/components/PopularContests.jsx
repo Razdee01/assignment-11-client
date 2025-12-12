@@ -60,9 +60,9 @@ const PopularContests = () => {
             </p>
 
             <Link
-              to={`contest-details/${contest._id}`}
+              to={`contests/${contest._id}`}
              
-              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg"
+              className="mt-4 w-full text-center inline-block px-4 py-2 bg-green-600 text-white rounded-lg"
             >
               View Details
             </Link>

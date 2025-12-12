@@ -5,6 +5,8 @@ export default function HeroBanner() {
 
   const handleSearch = (query) => {
     if (!query) return;
+
+    // Navigate to AllContests with search query
     navigate(`/all-contests?search=${encodeURIComponent(query)}`);
   };
 
@@ -36,7 +38,7 @@ export default function HeroBanner() {
             onSubmit={(e) => {
               e.preventDefault();
               const query = e.target.search.value.trim();
-              handleSearch(query);
+              handleSearch(query || "All");
             }}
           >
             <input
@@ -50,21 +52,22 @@ export default function HeroBanner() {
             </button>
           </form>
 
-          {/* Quick Tags (Non-clickable) */}
+          {/* Quick Tags */}
           <div className="flex flex-wrap gap-3 justify-center mt-8">
             {[
               "Logo Design",
               "Article Writing",
               "Photography",
-              "Gaming Review",
+              "Gaming",
               "Business Idea",
             ].map((tag) => (
-              <span
+              <button
                 key={tag}
-                className="btn btn-outline btn-md text-white cursor-default opacity-70 hover:opacity-70"
+                className="btn btn-outline btn-md text-white hover:bg-blue-600 hover:text-white"
+                onClick={() => handleSearch(tag)}
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
         </div>

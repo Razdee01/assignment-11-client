@@ -112,7 +112,7 @@ const NavBar = () => {
           </li>
           <li>
             <NavLink
-              to="/contests"
+              to="/all-contests"
               className={({ isActive }) =>
                 `font-semibold ${isActive ? "text-purple-500" : ""}`
               }

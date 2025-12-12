@@ -17,12 +17,12 @@ export const router = createBrowserRouter([
     errorElement: <Error />,
     children: [
       { index: true, element: <Home /> },
-      { path: "contests", element: <AllContests /> },
+      { path: "all-contests", element: <AllContests /> },
       { path: "how-it-works", element: <HowItWorks /> },
       { path: "/login", element: <Login /> },
       { path: "/registration", element: <Registration /> },
       { path: "/dashboard", element: <DashBoard /> },
-      { path: "/contest-details/:id", element: <ContestDetails />}
+      { path: "/contests/:id", element: <ContestDetails /> },
     ],
   },
 ]);
