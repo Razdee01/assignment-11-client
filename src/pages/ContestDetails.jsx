@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams } from "react-router";
 import Swal from "sweetalert2";
+import Loading from "../loading/Loading";
 
 export default function ContestDetails() {
   const { id } = useParams();
@@ -72,7 +73,7 @@ export default function ContestDetails() {
     Swal.fire("Success!", "Your task has been submitted.", "success");
   };
 
-  if (isLoading) return <p className="text-center py-20">Loading...</p>;
+  if (isLoading) return <Loading />;
 
   return (
     <div className="w-11/12 mx-auto py-10">

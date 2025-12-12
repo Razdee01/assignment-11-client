@@ -34,7 +34,8 @@ const AllContests = () => {
 
   // Set initial active tab from search query
   const [activeTab, setActiveTab] = useState(() => {
-    return searchQuery && searchQuery !== "All" ? searchQuery : "All";
+    const query = new URLSearchParams(location.search).get("search");
+    return query && query !== "All" ? query : "All";
   });
 
   // Filter contests by active tab
