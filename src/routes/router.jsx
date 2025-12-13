@@ -10,6 +10,7 @@ import Registration from "../pages/Registration";
 import DashBoard from "../pages/DashBoard";
 import ContestDetails from "../pages/ContestDetails";
 import PrivetRoute from "./PrivetRoute";
+import PaymentSuccess from "../pages/PaymentSuccess";
 
 export const router = createBrowserRouter([
   {
@@ -23,8 +24,15 @@ export const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/registration", element: <Registration /> },
       { path: "/dashboard", element: <DashBoard /> },
-      { path: "/contests/:id",
-         element: <PrivetRoute><ContestDetails /></PrivetRoute>},
+      {
+        path: "/contests/:id",
+        element: (
+          <PrivetRoute>
+            <ContestDetails />
+          </PrivetRoute>
+        ),
+      },
+      { path: "/payment-success", element: <PaymentSuccess />},
     ],
   },
 ]);

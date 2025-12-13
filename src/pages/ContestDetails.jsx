@@ -1,17 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { useParams } from "react-router";
 import Swal from "sweetalert2";
 import Loading from "../loading/Loading";
+import { AuthContext } from "../contexts/AuthContext";
 
 export default function ContestDetails() {
   const { id } = useParams();
+  const {user}=useContext(AuthContext);
 
   const [contest, setContest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
- 
+
   const [countdown, setCountdown] = useState("");
+  const handlePayment=async()=>
+  {
+    const paymentData = {
+      contestId: contest._id,
+      contestName: contest.name,
+      amount: contest.entryFee,
+      bannerImage: contest.bannerImage,
+      description: contest.description,
+
+      userId: user.uid, // ✅ Firebase UID
+      userName: user.displayName || "", // ✅ Firebase name
+      userEmail: user.email, // ✅ Firebase email
+      userPhoto: user.photoURL || "", // ✅ Firebase photo URL
+    };
+    
+    const {data} = await axios.post(
+      "http://localhost:3000/create-checkout-session",
+      paymentData
+    );
+    console.log(data);
+    window.location.href = data.url;
+  }
 
   // Fetch contest data
   useEffect(() => {
@@ -137,10 +161,10 @@ export default function ContestDetails() {
       </div>
 
       {/* Register Button */}
-      <button
+      {/* <button
         disabled={isEnded}
         onClick={() => {
-          setIsRegistered(true);
+          handlePayment(true);
           Swal.fire("Registered!", "Payment Successful.", "success");
         }}
         className={`w-full mt-6 py-3 text-white rounded-xl text-lg font-semibold ${
@@ -148,6 +172,15 @@ export default function ContestDetails() {
         }`}
       >
         {isEnded ? "Contest Ended" : "Register"}
+      </button> */}
+      <button
+        disabled={isEnded}
+        onClick={handlePayment}
+        className={`w-full mt-6 py-3 text-white rounded-xl text-lg font-semibold ${
+          isEnded ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        {isEnded ? "Contest Ended" : "Register & Pay"}
       </button>
 
       {/* Submit Task Button */}

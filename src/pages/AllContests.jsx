@@ -10,6 +10,8 @@ const AllContests = () => {
   const location = useLocation();
   const user = useContext(AuthContext);
 
+ 
+
   // Get search query from URL
   const searchQuery =
     new URLSearchParams(location.search).get("search") || "All";
