@@ -12,6 +12,8 @@ export default function ContestDetails() {
   const [contest, setContest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
 
   const [countdown, setCountdown] = useState("");
   const handlePayment=async()=>
@@ -23,10 +25,10 @@ export default function ContestDetails() {
       bannerImage: contest.bannerImage,
       description: contest.description,
 
-      userId: user.uid, // ✅ Firebase UID
-      userName: user.displayName || "", // ✅ Firebase name
-      userEmail: user.email, // ✅ Firebase email
-      userPhoto: user.photoURL || "", // ✅ Firebase photo URL
+      userId: user.uid,
+      userName: user.displayName || "", 
+      userEmail: user.email, 
+      userPhoto: user.photoURL || "", 
     };
     
     const {data} = await axios.post(
@@ -36,6 +38,41 @@ export default function ContestDetails() {
     console.log(data);
     window.location.href = data.url;
   }
+  useEffect(() => {
+    if (!user?.email || !id) return;
+
+    axios
+      .get("http://localhost:3000/submissions/check", {
+        params: {
+          contestId: id,
+          email: user.email,
+        },
+      })
+      .then((res) => {
+        setHasSubmitted(res.data.submitted);
+      })
+      .catch(console.error);
+  }, [id, user?.email]);
+  
+  useEffect(() => {
+    console.log("CHECKING REGISTRATION:", id, user?.email);
+
+    if (!user || !id) return;
+
+    axios
+      .get("http://localhost:3000/registrations/check", {
+        params: {
+          contestId: id.toString(),
+          email: user.email,
+        },
+      })
+      .then((res) => {
+        console.log("REGISTRATION CHECK RESULT:", res.data);
+        setIsRegistered(res.data.registered);
+      })
+      .catch((err) => console.error("REG CHECK ERROR:", err));
+  }, [id, user]);
+  
 
   // Fetch contest data
   useEffect(() => {
@@ -78,25 +115,31 @@ export default function ContestDetails() {
     const { value: taskLink } = await Swal.fire({
       title: "Submit Your Task",
       input: "textarea",
-      inputLabel: "Paste your work link (Drive / GitHub / Image / Article)",
-      inputPlaceholder: "Enter your submission link here...",
-      inputAttributes: {
-        "aria-label": "Task Submission",
-      },
+      inputPlaceholder: "Paste your submission link",
       showCancelButton: true,
     });
 
     if (!taskLink) return;
 
-    await axios.post("http://localhost:3000/submit-task", {
-      contestId: id,
-      taskLink,
-      userEmail: "user@gmail.com", // replace with real user email
-    });
+    try {
+      await axios.post("http://localhost:3000/submit-task", {
+        contestId: id,
+        taskLink,
+        userEmail: user.email,
+      });
 
-    Swal.fire("Success!", "Your task has been submitted.", "success");
+      setHasSubmitted(true);
+
+      Swal.fire("Success!", "Task submitted successfully!", "success");
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Submission failed",
+        "error"
+      );
+    }
   };
-
+  
   if (isLoading) return <Loading />;
 
   return (
@@ -161,39 +204,30 @@ export default function ContestDetails() {
       </div>
 
       {/* Register Button */}
-      {/* <button
-        disabled={isEnded}
-        onClick={() => {
-          handlePayment(true);
-          Swal.fire("Registered!", "Payment Successful.", "success");
-        }}
-        className={`w-full mt-6 py-3 text-white rounded-xl text-lg font-semibold ${
-          isEnded ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-        }`}
-      >
-        {isEnded ? "Contest Ended" : "Register"}
-      </button> */}
+
       <button
-        disabled={isEnded}
+        disabled={isEnded || isRegistered}
         onClick={handlePayment}
         className={`w-full mt-6 py-3 text-white rounded-xl text-lg font-semibold ${
-          isEnded ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+          isEnded || isRegistered
+            ? "bg-gray-400"
+            : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
-        {isEnded ? "Contest Ended" : "Register & Pay"}
+        {isRegistered ? "Registered" : "Register"}
       </button>
 
       {/* Submit Task Button */}
       <button
-        disabled={isEnded || !isRegistered}
+        disabled={isEnded || !isRegistered || hasSubmitted}
         onClick={handleTaskSubmit}
         className={`w-full mt-4 py-3 text-white rounded-xl text-lg font-semibold ${
-          isEnded || !isRegistered
+          isEnded || !isRegistered || hasSubmitted
             ? "bg-gray-400"
             : "bg-green-600 hover:bg-green-700"
         }`}
       >
-        Submit Task
+        {hasSubmitted ? "Already Submitted" : "Submit Task"}
       </button>
     </div>
   );
