@@ -21,14 +21,15 @@ export default function ContestDetails() {
     const paymentData = {
       contestId: contest._id,
       contestName: contest.name,
-      amount: contest.entryFee,
-      bannerImage: contest.bannerImage,
+      amount: Number(contest.entryFee),
+      bannerImage: contest.bannerImage || "https://via.placeholder.com/800x400",
       description: contest.description,
 
       userId: user.uid,
-      userName: user.displayName || "", 
-      userEmail: user.email, 
-      userPhoto: user.photoURL || "", 
+      userName: user.displayName || "",
+      userEmail: user.email,
+      userPhoto: user.photoURL || "",
+      creatorEmail: user.email,
     };
     
     const {data} = await axios.post(
