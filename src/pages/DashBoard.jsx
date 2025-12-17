@@ -1,89 +1,76 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
 import { AuthContext } from "../contexts/AuthContext";
+import DashBoardAdmin from "./DashBoardAdmin";
 
-const DashboardDemo = () => {
-  // Hardcoded demo data (kept from before)
-  const {user}=useContext(AuthContext);
-  const participatedContests = [
-    {
-      id: 3,
-      name: "Contest C",
-      paymentStatus: "Pending",
-      deadline: "2026-02-10",
-    },
-    { id: 1, name: "Contest A", paymentStatus: "Paid", deadline: "2025-12-20" },
-    { id: 2, name: "Contest B", paymentStatus: "Paid", deadline: "2026-01-15" },
-  ];
+const DashBoard = () => {
+  const { user } = useContext(AuthContext);
+  // In your Creator Dashboard component (DashBoard.jsx), add this near the top
 
-  const winningContests = [
-    {
-      id: 1,
-      name: "Contest X",
-      prize: "$500",
-      rank: "1st Place",
-      dateWon: "2023-12-01",
-    },
-    {
-      id: 2,
-      name: "Contest Y",
-      prize: "$200",
-      rank: "2nd Place",
-      dateWon: "2023-11-15",
-    },
-  ];
+  const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const profileData = {
-    name: "John Doe",
-    photo: "https://via.placeholder.com/150",
-    bio: "Passionate contestant",
-    participated: 10,
-    won: 3,
-  };
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      if (!user?.email) return;
+
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `http://localhost:3000/participates/${user.email}`
+        );
+        setParticipants(response.data);
+      } catch (error) {
+        console.error("Failed to load participants:", error);
+        alert("Could not load participants");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParticipants();
+  }, [user?.email]);
 
   const createdContests = [
-    { id: 1, name: "My Contest 1", status: "Pending", deadline: "2024-01-20" },
+    {
+      id: 1,
+      name: "My Contest 1",
+      status: "Pending",
+      deadline: "2026-01-20",
+      entryFee: 150,
+      prizeMoney: 1000,
+    },
     {
       id: 2,
       name: "My Contest 2",
       status: "Confirmed",
-      deadline: "2024-02-15",
-    },
-    { id: 3, name: "My Contest 3", status: "Rejected", deadline: "2024-03-10" },
-  ];
-
-  const submissions = [
-    {
-      id: 1,
-      contestName: "My Contest 1",
-      participant: "User A",
-      email: "usera@example.com",
-      task: "Submitted task link",
+      deadline: "2026-02-15",
+      entryFee: 200,
+      prizeMoney: 2000,
     },
     {
-      id: 2,
-      contestName: "My Contest 1",
-      participant: "User B",
-      email: "userb@example.com",
-      task: "Submitted task link",
+      id: 3,
+      name: "My Contest 3",
+      status: "Rejected",
+      deadline: "2026-03-10",
+      entryFee: 100,
+      prizeMoney: 500,
     },
   ];
 
-  // Sort participated contests by upcoming deadline (earliest first)
-  const sortedParticipated = [...participatedContests].sort(
-    (a, b) => new Date(a.deadline) - new Date(b.deadline)
-  );
+ 
 
-  // Form for Add Contest (hardcoded demo - no real submission)
+  // Add Contest Form
   const {
     register,
     handleSubmit,
     setValue,
     watch,
     formState: { errors },
+    reset,
   } = useForm();
   const deadline = watch("deadline");
 
@@ -97,141 +84,54 @@ const DashboardDemo = () => {
         prizeMoney: Number(data.prizeMoney),
         taskInstruction: data.taskInstruction,
         contestType: data.contestType,
-        creatorEmail: user.email,
+        creatorEmail: user?.email || "unknown@example.com",
         deadline: data.deadline.toISOString(),
       };
 
-      console.log("Sending:", payload);
+      console.log("Creating contest:", payload);
 
-      // ← CHANGE THIS LINE TO FULL URL (same as your working code)
       const response = await axios.post(
         "http://localhost:3000/api/contests",
         payload
       );
 
-      alert("Contest created successfully! 🎉 Waiting for admin approval.");
-      console.log("Success:", response.data);
+      alert(
+        "Contest created successfully! 🎉 Status: Pending (waiting for admin approval)"
+      );
+      console.log("Response:", response.data);
+      reset(); // Clear form after success
     } catch (error) {
-      if (error.response) {
-        alert("Error: " + (error.response.data.message || "Server error"));
-      } else {
-        alert("Cannot connect to server. Is backend running on port 3000?");
-      }
-      console.error("Error:", error);
+      console.error("Error creating contest:", error);
+      alert(
+        "Error: " +
+          (error.response?.data?.message || "Failed to create contest")
+      );
     }
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-12">
-      {/* User Dashboard Section */}
+    <div className="container mx-auto p-6 space-y-12">
+      {/* Creator Dashboard Header */}
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-2">Creator Dashboard</h1>
+        <p className="text-lg text-gray-600">
+          Welcome, {user?.displayName || user?.email || "Creator"}!
+        </p>
+      </div>
+
+      {/* Add Contest Form */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
-        <h2 className="text-4xl font-bold mb-8 text-center">User Dashboard</h2>
-
-        {/* My Participated Contests */}
-        <div className="mb-12">
-          <h3 className="text-2xl font-bold mb-4">My Participated Contests</h3>
-          <div className="overflow-x-auto">
-            <table className="table table-zebra w-full">
-              <thead>
-                <tr>
-                  <th>Contest Name</th>
-                  <th>Payment Status</th>
-                  <th>Deadline</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedParticipated.map((contest) => (
-                  <tr key={contest.id}>
-                    <td>{contest.name}</td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          contest.paymentStatus === "Paid"
-                            ? "badge-success"
-                            : "badge-warning"
-                        }`}
-                      >
-                        {contest.paymentStatus}
-                      </span>
-                    </td>
-                    <td>{contest.deadline}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* My Winning Contests */}
-        <div className="mb-12">
-          <h3 className="text-2xl font-bold mb-4">My Winning Contests</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {winningContests.map((win) => (
-              <div key={win.id} className="card bg-base-100 shadow-xl">
-                <div className="card-body text-center">
-                  <h4 className="card-title justify-center">{win.name}</h4>
-                  <p className="text-2xl font-bold text-primary">{win.prize}</p>
-                  <p>{win.rank}</p>
-                  <p className="text-sm">Won on: {win.dateWon}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* My Profile */}
-        <div>
-          <h3 className="text-2xl font-bold mb-4">My Profile</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="flex flex-col items-center">
-              <img
-                src={profileData.photo}
-                alt="Profile"
-                className="w-40 h-40 rounded-full mb-4"
-              />
-              <div className="text-center">
-                <h4 className="text-xl font-semibold">{profileData.name}</h4>
-                <p className="italic">{profileData.bio}</p>
-              </div>
-            </div>
-            <div>
-              <div className="stats shadow w-full">
-                <div className="stat">
-                  <div className="stat-title">Win Rate</div>
-                  <div className="stat-value">
-                    {(
-                      (profileData.won / profileData.participated) *
-                      100
-                    ).toFixed(0)}
-                    %
-                  </div>
-                  <div className="stat-desc">
-                    {profileData.won} wins out of {profileData.participated}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Creator Dashboard Section - With Real Add Contest Form (hardcoded submit) */}
-      <section className="bg-base-200 p-8 rounded-xl shadow-lg">
-        <h2 className="text-4xl font-bold mb-8 text-center">
-          Creator Dashboard - Add Contest
-        </h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">Add New Contest</h2>
 
         <div className="max-w-4xl mx-auto">
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6 bg-base-100 p-8 rounded-xl shadow"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-base-100 p-8 rounded-xl shadow"
           >
-            {/* Name */}
-            <div>
+            {/* Contest Name */}
+            <div className="md:col-span-2">
               <label className="label">
-                <span className="label-text font-semibold text-lg">
-                  Contest Name
-                </span>
+                <span className="label-text font-semibold">Contest Name</span>
               </label>
               <input
                 {...register("name", { required: "Contest name is required" })}
@@ -244,17 +144,23 @@ const DashboardDemo = () => {
               )}
             </div>
 
-            {/* Image URL */}
-            <div>
+            {/* Banner Image URL */}
+            <div className="md:col-span-2">
               <label className="label">
-                <span className="label-text font-semibold text-lg">
+                <span className="label-text font-semibold">
                   Banner Image URL
                 </span>
               </label>
               <input
-                {...register("image", { required: "Image URL is required" })}
+                {...register("image", {
+                  required: "Image URL is required",
+                  pattern: {
+                    value: /^https:\/\//,
+                    message: "Must be a valid HTTPS URL",
+                  },
+                })}
                 type="url"
-                placeholder="https://example.com/banner.jpg"
+                placeholder="https://images.unsplash.com/..."
                 className="input input-bordered w-full"
               />
               {errors.image && (
@@ -265,18 +171,16 @@ const DashboardDemo = () => {
             </div>
 
             {/* Description */}
-            <div>
+            <div className="md:col-span-2">
               <label className="label">
-                <span className="label-text font-semibold text-lg">
-                  Description
-                </span>
+                <span className="label-text font-semibold">Description</span>
               </label>
               <textarea
                 {...register("description", {
                   required: "Description is required",
                 })}
                 rows="4"
-                placeholder="Tell participants what the contest is about..."
+                placeholder="Explain your contest..."
                 className="textarea textarea-bordered w-full"
               />
               {errors.description && (
@@ -287,56 +191,52 @@ const DashboardDemo = () => {
             </div>
 
             {/* Entry Fee & Prize Money */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="label">
-                  <span className="label-text font-semibold text-lg">
-                    Entry Fee ($)
-                  </span>
-                </label>
-                <input
-                  {...register("price", {
-                    required: "Entry fee required",
-                    min: { value: 0, message: "Must be >= 0" },
-                  })}
-                  type="number"
-                  placeholder="10"
-                  className="input input-bordered w-full"
-                />
-                {errors.price && (
-                  <p className="text-error text-sm mt-1">
-                    {errors.price.message}
-                  </p>
-                )}
-              </div>
+            <div>
+              <label className="label">
+                <span className="label-text font-semibold">Entry Fee (৳)</span>
+              </label>
+              <input
+                {...register("price", {
+                  required: "Entry fee required",
+                  min: { value: 100, message: "Minimum ৳100 (Stripe rule)" },
+                })}
+                type="number"
+                placeholder="100"
+                className="input input-bordered w-full"
+              />
+              {errors.price && (
+                <p className="text-error text-sm mt-1">
+                  {errors.price.message}
+                </p>
+              )}
+            </div>
 
-              <div>
-                <label className="label">
-                  <span className="label-text font-semibold text-lg">
-                    Prize Money ($)
-                  </span>
-                </label>
-                <input
-                  {...register("prizeMoney", {
-                    required: "Prize money required",
-                    min: { value: 1, message: "Must be > 0" },
-                  })}
-                  type="number"
-                  placeholder="500"
-                  className="input input-bordered w-full"
-                />
-                {errors.prizeMoney && (
-                  <p className="text-error text-sm mt-1">
-                    {errors.prizeMoney.message}
-                  </p>
-                )}
-              </div>
+            <div>
+              <label className="label">
+                <span className="label-text font-semibold">
+                  Prize Money (৳)
+                </span>
+              </label>
+              <input
+                {...register("prizeMoney", {
+                  required: "Prize money required",
+                  min: { value: 100, message: "Must be ≥ ৳100" },
+                })}
+                type="number"
+                placeholder="1000"
+                className="input input-bordered w-full"
+              />
+              {errors.prizeMoney && (
+                <p className="text-error text-sm mt-1">
+                  {errors.prizeMoney.message}
+                </p>
+              )}
             </div>
 
             {/* Task Instruction */}
-            <div>
+            <div className="md:col-span-2">
               <label className="label">
-                <span className="label-text font-semibold text-lg">
+                <span className="label-text font-semibold">
                   Task Instruction
                 </span>
               </label>
@@ -344,8 +244,8 @@ const DashboardDemo = () => {
                 {...register("taskInstruction", {
                   required: "Task instruction required",
                 })}
-                rows="5"
-                placeholder="What should participants submit? File types, rules, etc."
+                rows="4"
+                placeholder="What should participants submit?"
                 className="textarea textarea-bordered w-full"
               />
               {errors.taskInstruction && (
@@ -358,9 +258,7 @@ const DashboardDemo = () => {
             {/* Contest Type */}
             <div>
               <label className="label">
-                <span className="label-text font-semibold text-lg">
-                  Contest Type
-                </span>
+                <span className="label-text font-semibold">Contest Type</span>
               </label>
               <select
                 {...register("contestType", {
@@ -387,9 +285,7 @@ const DashboardDemo = () => {
             {/* Deadline */}
             <div>
               <label className="label">
-                <span className="label-text font-semibold text-lg">
-                  Deadline
-                </span>
+                <span className="label-text font-semibold">Deadline</span>
               </label>
               <DatePicker
                 selected={deadline}
@@ -397,11 +293,10 @@ const DashboardDemo = () => {
                 showTimeSelect
                 timeFormat="HH:mm"
                 timeIntervals={15}
-                dateFormat="yyyy-MM-dd'T'HH:mm:ss'Z'"
+                dateFormat="yyyy-MM-dd HH:mm"
                 minDate={new Date()}
-                placeholderText="Select deadline date and time"
+                placeholderText="Select date & time"
                 className="input input-bordered w-full"
-                fixedHeight
               />
               {!deadline && (
                 <p className="text-error text-sm mt-1">Deadline is required</p>
@@ -409,50 +304,137 @@ const DashboardDemo = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="text-center pt-6">
+            <div className="md:col-span-2 text-center">
               <button
                 type="submit"
                 className="btn btn-primary btn-wide text-xl"
               >
-                Create Contest (Demo)
+                Create Contest
               </button>
             </div>
           </form>
-
-          <div className="alert alert-info mt-8">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              className="stroke-current shrink-0 w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-            <span>
-              This is a hardcoded demo page. When you click "Create Contest", it
-              will show an alert with the form data in the console.
-            </span>
-          </div>
         </div>
       </section>
 
-      {/* Other Creator & Admin sections kept minimal for space */}
+      {/* My Created Contests Table */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
-        <h2 className="text-4xl font-bold mb-8 text-center">
-          Other Sections (Demo)
+        <h2 className="text-3xl font-bold mb-8 text-center">
+          My Created Contests
         </h2>
-        <p className="text-center text-lg">
-          My Created Contests, Submitted Tasks, Admin panels, etc. are omitted
-          here for brevity but can be added similarly.
-        </p>
+        <div className="overflow-x-auto">
+          <table className="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Entry Fee</th>
+                <th>Prize</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {createdContests.map((contest) => (
+                <tr key={contest.id}>
+                  <td className="font-medium">{contest.name}</td>
+                  <td>৳{contest.entryFee}</td>
+                  <td>৳{contest.prizeMoney}</td>
+                  <td>{contest.deadline}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        contest.status === "Confirmed"
+                          ? "badge-success"
+                          : contest.status === "Rejected"
+                          ? "badge-error"
+                          : "badge-warning"
+                      }`}
+                    >
+                      {contest.status}
+                    </span>
+                  </td>
+                  <td>
+                    {contest.status === "Pending" ? (
+                      <span className="text-sm text-gray-500">
+                        Waiting for approval
+                      </span>
+                    ) : (
+                      <button className="btn btn-sm btn-secondary">
+                        See Submissions
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Submitted Tasks Page */}
+      {/* Submitted Tasks Page - Real Data */}
+      <section className="bg-base-200 p-8 rounded-xl shadow-lg">
+        <h2 className="text-3xl font-bold mb-8 text-center">
+          Submitted Tasks & Participants
+        </h2>
+
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <span className="loading loading-spinner loading-lg"></span>
+          </div>
+        ) : participants.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-xl text-gray-500">No one has registered yet.</p>
+            <p className="text-sm mt-2">
+              Share your contest to get participants! 🚀
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Contest</th>
+                  <th>Participant Name</th>
+                  <th>Email</th>
+                  <th>Submitted Task</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {participants.map((p, index) => (
+                  <tr key={index}>
+                    <td className="font-medium">{p.contestName}</td>
+                    <td>{p.userName || "N/A"}</td>
+                    <td>{p.userEmail}</td>
+                    <td>
+                      {p.taskLink ? (
+                        <a
+                          href={p.taskLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="link link-primary"
+                        >
+                          View Submission
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">Not submitted yet</span>
+                      )}
+                    </td>
+                    <td>
+                      <button className="btn btn-sm btn-success">
+                        Declare Winner
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );
 };
 
-export default DashboardDemo;
+export default DashBoard;

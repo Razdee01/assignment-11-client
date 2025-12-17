@@ -11,6 +11,8 @@ import DashBoard from "../pages/DashBoard";
 import ContestDetails from "../pages/ContestDetails";
 import PrivetRoute from "./PrivetRoute";
 import PaymentSuccess from "../pages/PaymentSuccess";
+import DashBoardUser from "../pages/DashBoardUser";
+import DashBoardAdmin from "../pages/DashBoardAdmin";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +26,8 @@ export const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/registration", element: <Registration /> },
       { path: "/dashboard", element: <DashBoard /> },
+      { path: "/dashboardAdmin", element: <DashBoardAdmin /> },
+      { path: "/dashboarduser", element: <DashBoardUser /> },
       {
         path: "/contests/:id",
         element: (
