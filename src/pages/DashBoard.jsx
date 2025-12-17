@@ -4,64 +4,57 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
 import { AuthContext } from "../contexts/AuthContext";
-import DashBoardAdmin from "./DashBoardAdmin";
+import Loading from "../loading/Loading";
+import Swal from "sweetalert2";
 
 const DashBoard = () => {
   const { user } = useContext(AuthContext);
-  // In your Creator Dashboard component (DashBoard.jsx), add this near the top
 
+  const [myContests, setMyContests] = useState([]);
+  const [loadingContests, setLoadingContests] = useState(true);
   const [participants, setParticipants] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingParticipants, setLoadingParticipants] = useState(true);
+  const [declaredWinners, setDeclaredWinners] = useState(new Set()); // Track declared winners locally
 
+  // Fetch My Created Contests
+  useEffect(() => {
+    const fetchMyContests = async () => {
+      if (!user?.email) return;
+      try {
+        setLoadingContests(true);
+        const response = await axios.get(
+          `http://localhost:3000/my-contests/${user.email}`
+        );
+        setMyContests(response.data);
+      } catch (error) {
+        console.error("Failed to load contests:", error);
+        Swal.fire("Error", "Could not load your contests", "error");
+      } finally {
+        setLoadingContests(false);
+      }
+    };
+    fetchMyContests();
+  }, [user?.email]);
+
+  // Fetch Participants
   useEffect(() => {
     const fetchParticipants = async () => {
       if (!user?.email) return;
-
       try {
-        setLoading(true);
+        setLoadingParticipants(true);
         const response = await axios.get(
           `http://localhost:3000/participates/${user.email}`
         );
         setParticipants(response.data);
       } catch (error) {
         console.error("Failed to load participants:", error);
-        alert("Could not load participants");
+        Swal.fire("Error", "Could not load participants", "error");
       } finally {
-        setLoading(false);
+        setLoadingParticipants(false);
       }
     };
-
     fetchParticipants();
   }, [user?.email]);
-
-  const createdContests = [
-    {
-      id: 1,
-      name: "My Contest 1",
-      status: "Pending",
-      deadline: "2026-01-20",
-      entryFee: 150,
-      prizeMoney: 1000,
-    },
-    {
-      id: 2,
-      name: "My Contest 2",
-      status: "Confirmed",
-      deadline: "2026-02-15",
-      entryFee: 200,
-      prizeMoney: 2000,
-    },
-    {
-      id: 3,
-      name: "My Contest 3",
-      status: "Rejected",
-      deadline: "2026-03-10",
-      entryFee: 100,
-      prizeMoney: 500,
-    },
-  ];
-
- 
 
   // Add Contest Form
   const {
@@ -88,30 +81,75 @@ const DashBoard = () => {
         deadline: data.deadline.toISOString(),
       };
 
-      console.log("Creating contest:", payload);
+      await axios.post("http://localhost:3000/api/contests", payload);
 
-      const response = await axios.post(
-        "http://localhost:3000/api/contests",
-        payload
-      );
-
-      alert(
-        "Contest created successfully! 🎉 Status: Pending (waiting for admin approval)"
-      );
-      console.log("Response:", response.data);
-      reset(); // Clear form after success
+      Swal.fire({
+        title: "Success!",
+        text: "Contest created successfully! Status: Pending",
+        icon: "success",
+        timer: 3000,
+        showConfirmButton: false,
+      });
+      reset();
     } catch (error) {
-      console.error("Error creating contest:", error);
-      alert(
-        "Error: " +
-          (error.response?.data?.message || "Failed to create contest")
+      Swal.fire(
+        "Error",
+        error.response?.data?.message || "Failed to create contest",
+        "error"
       );
+    }
+  };
+
+  // Declare Winner
+  const handleDeclareWinner = async (participant) => {
+    const result = await Swal.fire({
+      title: "Declare Winner?",
+      text: `Declare ${
+        participant.userName || participant.userEmail
+      } as winner of "${participant.contestName}"?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes!",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#22c55e",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await axios.post("http://localhost:3000/api/contests/declare-winner", {
+        contestId: participant.contestId,
+        winnerName: participant.userName || "Unknown",
+        winnerEmail: participant.userEmail,
+        winnerPhoto: participant.userPhoto || "",
+      });
+
+      Swal.fire({
+        title: "Winner Declared! 🏆",
+        text: `${
+          participant.userName || participant.userEmail
+        } is now the winner!`,
+        icon: "success",
+        timer: 3000,
+        showConfirmButton: false,
+      });
+
+      // Mark this contest as having a winner
+      setDeclaredWinners((prev) => new Set(prev).add(participant.contestId));
+
+      // Refresh participants
+      const response = await axios.get(
+        `http://localhost:3000/participates/${user.email}`
+      );
+      setParticipants(response.data);
+    } catch (error) {
+      Swal.fire("Error", error.response?.data?.message || "Failed", "error");
     }
   };
 
   return (
     <div className="container mx-auto p-6 space-y-12">
-      {/* Creator Dashboard Header */}
+      {/* Header */}
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-2">Creator Dashboard</h1>
         <p className="text-lg text-gray-600">
@@ -119,32 +157,24 @@ const DashBoard = () => {
         </p>
       </div>
 
-      {/* Add Contest Form */}
+      {/* Add Contest */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold mb-8 text-center">Add New Contest</h2>
-
         <div className="max-w-4xl mx-auto">
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-base-100 p-8 rounded-xl shadow"
           >
-            {/* Contest Name */}
             <div className="md:col-span-2">
               <label className="label">
                 <span className="label-text font-semibold">Contest Name</span>
               </label>
               <input
-                {...register("name", { required: "Contest name is required" })}
+                {...register("name", { required: "Required" })}
                 type="text"
-                placeholder="e.g. Pixel Art Challenge"
                 className="input input-bordered w-full"
               />
-              {errors.name && (
-                <p className="text-error text-sm mt-1">{errors.name.message}</p>
-              )}
             </div>
-
-            {/* Banner Image URL */}
             <div className="md:col-span-2">
               <label className="label">
                 <span className="label-text font-semibold">
@@ -153,64 +183,36 @@ const DashBoard = () => {
               </label>
               <input
                 {...register("image", {
-                  required: "Image URL is required",
-                  pattern: {
-                    value: /^https:\/\//,
-                    message: "Must be a valid HTTPS URL",
-                  },
+                  required: "Required",
+                  pattern: { value: /^https:\/\//, message: "HTTPS URL" },
                 })}
                 type="url"
-                placeholder="https://images.unsplash.com/..."
                 className="input input-bordered w-full"
               />
-              {errors.image && (
-                <p className="text-error text-sm mt-1">
-                  {errors.image.message}
-                </p>
-              )}
             </div>
-
-            {/* Description */}
             <div className="md:col-span-2">
               <label className="label">
                 <span className="label-text font-semibold">Description</span>
               </label>
               <textarea
-                {...register("description", {
-                  required: "Description is required",
-                })}
+                {...register("description", { required: "Required" })}
                 rows="4"
-                placeholder="Explain your contest..."
                 className="textarea textarea-bordered w-full"
               />
-              {errors.description && (
-                <p className="text-error text-sm mt-1">
-                  {errors.description.message}
-                </p>
-              )}
             </div>
-
-            {/* Entry Fee & Prize Money */}
             <div>
               <label className="label">
                 <span className="label-text font-semibold">Entry Fee (৳)</span>
               </label>
               <input
                 {...register("price", {
-                  required: "Entry fee required",
-                  min: { value: 100, message: "Minimum ৳100 (Stripe rule)" },
+                  required: "Required",
+                  min: { value: 100, message: "Min ৳100" },
                 })}
                 type="number"
-                placeholder="100"
                 className="input input-bordered w-full"
               />
-              {errors.price && (
-                <p className="text-error text-sm mt-1">
-                  {errors.price.message}
-                </p>
-              )}
             </div>
-
             <div>
               <label className="label">
                 <span className="label-text font-semibold">
@@ -218,22 +220,11 @@ const DashBoard = () => {
                 </span>
               </label>
               <input
-                {...register("prizeMoney", {
-                  required: "Prize money required",
-                  min: { value: 100, message: "Must be ≥ ৳100" },
-                })}
+                {...register("prizeMoney", { required: "Required" })}
                 type="number"
-                placeholder="1000"
                 className="input input-bordered w-full"
               />
-              {errors.prizeMoney && (
-                <p className="text-error text-sm mt-1">
-                  {errors.prizeMoney.message}
-                </p>
-              )}
             </div>
-
-            {/* Task Instruction */}
             <div className="md:col-span-2">
               <label className="label">
                 <span className="label-text font-semibold">
@@ -241,48 +232,28 @@ const DashBoard = () => {
                 </span>
               </label>
               <textarea
-                {...register("taskInstruction", {
-                  required: "Task instruction required",
-                })}
+                {...register("taskInstruction", { required: "Required" })}
                 rows="4"
-                placeholder="What should participants submit?"
                 className="textarea textarea-bordered w-full"
               />
-              {errors.taskInstruction && (
-                <p className="text-error text-sm mt-1">
-                  {errors.taskInstruction.message}
-                </p>
-              )}
             </div>
-
-            {/* Contest Type */}
             <div>
               <label className="label">
                 <span className="label-text font-semibold">Contest Type</span>
               </label>
               <select
-                {...register("contestType", {
-                  required: "Select a contest type",
-                })}
+                {...register("contestType", { required: "Required" })}
                 className="select select-bordered w-full"
               >
-                <option value="">Choose type...</option>
+                <option value="">Choose...</option>
                 <option>Design</option>
                 <option>Gaming</option>
                 <option>Writing</option>
                 <option>Photography</option>
                 <option>Video</option>
                 <option>Business Idea</option>
-                <option>Other</option>
               </select>
-              {errors.contestType && (
-                <p className="text-error text-sm mt-1">
-                  {errors.contestType.message}
-                </p>
-              )}
             </div>
-
-            {/* Deadline */}
             <div>
               <label className="label">
                 <span className="label-text font-semibold">Deadline</span>
@@ -292,18 +263,12 @@ const DashBoard = () => {
                 onChange={(date) => setValue("deadline", date)}
                 showTimeSelect
                 timeFormat="HH:mm"
-                timeIntervals={15}
                 dateFormat="yyyy-MM-dd HH:mm"
                 minDate={new Date()}
-                placeholderText="Select date & time"
                 className="input input-bordered w-full"
+                placeholderText="Select date & time"
               />
-              {!deadline && (
-                <p className="text-error text-sm mt-1">Deadline is required</p>
-              )}
             </div>
-
-            {/* Submit Button */}
             <div className="md:col-span-2 text-center">
               <button
                 type="submit"
@@ -316,118 +281,126 @@ const DashBoard = () => {
         </div>
       </section>
 
-      {/* My Created Contests Table */}
+      {/* My Created Contests */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold mb-8 text-center">
           My Created Contests
         </h2>
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Entry Fee</th>
-                <th>Prize</th>
-                <th>Deadline</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {createdContests.map((contest) => (
-                <tr key={contest.id}>
-                  <td className="font-medium">{contest.name}</td>
-                  <td>৳{contest.entryFee}</td>
-                  <td>৳{contest.prizeMoney}</td>
-                  <td>{contest.deadline}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        contest.status === "Confirmed"
-                          ? "badge-success"
-                          : contest.status === "Rejected"
-                          ? "badge-error"
-                          : "badge-warning"
-                      }`}
-                    >
-                      {contest.status}
-                    </span>
-                  </td>
-                  <td>
-                    {contest.status === "Pending" ? (
-                      <span className="text-sm text-gray-500">
-                        Waiting for approval
-                      </span>
-                    ) : (
-                      <button className="btn btn-sm btn-secondary">
-                        See Submissions
-                      </button>
-                    )}
-                  </td>
+        {loadingContests ? (
+          <Loading />
+        ) : myContests.length === 0 ? (
+          <p className="text-center text-xl text-gray-500 py-10">
+            No contests yet
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Entry Fee</th>
+                  <th>Prize</th>
+                  <th>Deadline</th>
+                  <th>Status</th>
+                  <th>Participants</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {myContests.map((c) => (
+                  <tr key={c._id}>
+                    <td className="font-medium">{c.name}</td>
+                    <td>৳{c.entryFee}</td>
+                    <td>৳{c.prizeMoney}</td>
+                    <td>{new Date(c.deadline).toLocaleDateString()}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          c.status === "Confirmed"
+                            ? "badge-success"
+                            : c.status === "Rejected"
+                            ? "badge-error"
+                            : "badge-warning"
+                        }`}
+                      >
+                        {c.status || "Pending"}
+                      </span>
+                    </td>
+                    <td>{c.participants || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
-      {/* Submitted Tasks Page */}
-      {/* Submitted Tasks Page - Real Data */}
+      {/* Participants & Declare Winner */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold mb-8 text-center">
           Submitted Tasks & Participants
         </h2>
-
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
+        {loadingParticipants ? (
+          <Loading />
         ) : participants.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-xl text-gray-500">No one has registered yet.</p>
-            <p className="text-sm mt-2">
-              Share your contest to get participants! 🚀
-            </p>
-          </div>
+          <p className="text-center text-xl text-gray-500 py-10">
+            No participants yet
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-zebra w-full">
               <thead>
                 <tr>
                   <th>Contest</th>
-                  <th>Participant Name</th>
+                  <th>Name</th>
                   <th>Email</th>
-                  <th>Submitted Task</th>
+                  <th>Task</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {participants.map((p, index) => (
-                  <tr key={index}>
-                    <td className="font-medium">{p.contestName}</td>
-                    <td>{p.userName || "N/A"}</td>
-                    <td>{p.userEmail}</td>
-                    <td>
-                      {p.taskLink ? (
-                        <a
-                          href={p.taskLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="link link-primary"
+                {participants.map((p) => {
+                  const isWinnerDeclared = declaredWinners.has(p.contestId);
+
+                  return (
+                    <tr key={p.userEmail + p.contestId}>
+                      <td className="font-medium">{p.contestName}</td>
+                      <td>
+                        {p.userName || "N/A"}
+                       
+                      </td>
+                      <td>{p.userEmail}</td>
+                      <td>
+                        {p.taskLink ? (
+                          <a
+                            href={p.taskLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="link"
+                          >
+                            View
+                          </a>
+                        ) : (
+                          <span className="text-gray-500">Not submitted</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleDeclareWinner(p)}
+                          disabled={isWinnerDeclared}
+                          className={`btn btn-sm ${
+                            isWinnerDeclared
+                              ? "btn-outline btn-disabled"
+                              : "btn-success"
+                          }`}
                         >
-                          View Submission
-                        </a>
-                      ) : (
-                        <span className="text-gray-500">Not submitted yet</span>
-                      )}
-                    </td>
-                    <td>
-                      <button className="btn btn-sm btn-success">
-                        Declare Winner
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                          {isWinnerDeclared
+                            ? "Winner Declared ✓"
+                            : "Declare Winner"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
