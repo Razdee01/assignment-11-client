@@ -6,52 +6,50 @@ import Loading from "../loading/Loading";
 const DeshBoardUser = () => {
   const { user } = useContext(AuthContext);
 
-  // State for real data
   const [participatedContests, setParticipatedContests] = useState([]);
   const [winningContests, setWinningContests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingParticipated, setLoadingParticipated] = useState(true);
+  const [loadingWinnings, setLoadingWinnings] = useState(true);
 
   // Fetch Participated Contests
   useEffect(() => {
     const fetchParticipated = async () => {
       if (!user?.email) return;
-
       try {
-        setLoading(true);
+        setLoadingParticipated(true);
         const response = await axios.get(
-          `http://localhost:3000/participated-contests/${user.email}` // ← NEW ENDPOINT
+          `http://localhost:3000/participated-contests/${user.email}`
         );
-        setParticipatedContests(response.data); // already sorted by backend
+        setParticipatedContests(response.data || []);
       } catch (error) {
         console.error("Failed to load participated contests:", error);
         alert("Could not load participated contests");
       } finally {
-        setLoading(false);
+        setLoadingParticipated(false);
       }
     };
-
     fetchParticipated();
   }, [user?.email]);
 
-  // Fetch Winning Contests (contests where user is winner)
+  // Fetch Winning Contests
   useEffect(() => {
     const fetchWinnings = async () => {
       if (!user?.email) return;
-
       try {
+        setLoadingWinnings(true);
         const response = await axios.get(
           `http://localhost:3000/winning-contests/${user.email}`
         );
-        setWinningContests(response.data);
+        setWinningContests(response.data || []);
       } catch (error) {
         console.error("Failed to load winning contests:", error);
+      } finally {
+        setLoadingWinnings(false);
       }
     };
-
     fetchWinnings();
   }, [user?.email]);
 
-  // Calculate win percentage
   const totalParticipated = participatedContests.length;
   const totalWon = winningContests.length;
   const winPercentage =
@@ -59,7 +57,8 @@ const DeshBoardUser = () => {
       ? ((totalWon / totalParticipated) * 100).toFixed(1)
       : 0;
 
-  if (loading) return <Loading />;
+  // Show loader until participated contests are fetched
+  if (loadingParticipated) return <Loading />;
 
   return (
     <div className="container mx-auto p-6 space-y-12">
@@ -71,17 +70,12 @@ const DeshBoardUser = () => {
         </p>
       </div>
 
-      {/* My Participated Contests */}
+      {/* Participated Contests */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold mb-8 text-center">
           My Participated Contests
         </h2>
-
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
-        ) : participatedContests.length === 0 ? (
+        {participatedContests.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-xl text-gray-500">
               You haven't participated in any contests yet.
@@ -101,28 +95,40 @@ const DeshBoardUser = () => {
                 </tr>
               </thead>
               <tbody>
-                {participatedContests.map((contest) => (
-                  <tr key={contest._id}>
-                    <td className="font-medium">{contest.name}</td>
-                    <td>৳{contest.entryFee}</td>
-                    <td>৳{contest.prizeMoney}</td>
-                    <td>{new Date(contest.deadline).toLocaleDateString()}</td>
-                    <td>
-                      <span className="badge badge-success badge-lg">Paid</span>
-                    </td>
-                  </tr>
-                ))}
+                {participatedContests.map((contest) => {
+                  const contestEnded = new Date() > new Date(contest.deadline);
+                  return (
+                    <tr key={contest._id}>
+                      <td className="font-medium">{contest.name}</td>
+                      <td>৳{contest.entryFee}</td>
+                      <td>৳{contest.prizeMoney}</td>
+                      <td>{new Date(contest.deadline).toLocaleDateString()}</td>
+                      <td>
+                        <span
+                          className={`badge badge-lg ${
+                            contestEnded ? "badge-error" : "badge-success"
+                          }`}
+                        >
+                          {contestEnded ? "Closed" : "Paid"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </section>
-      {/* My Winning Contests */}
+
+      {/* Winning Contests */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold mb-8 text-center">
           My Winning Contests 🏆
         </h2>
-        {winningContests.length === 0 ? (
+        {loadingWinnings ? (
+          <Loading />
+        ) : winningContests.length === 0 ? (
           <p className="text-center text-gray-500 text-xl">
             No wins yet. Keep participating! 💪
           </p>
@@ -151,7 +157,7 @@ const DeshBoardUser = () => {
         )}
       </section>
 
-      {/* My Profile & Stats */}
+      {/* Profile & Stats */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold mb-8 text-center">
           My Profile & Stats

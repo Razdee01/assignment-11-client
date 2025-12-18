@@ -1,259 +1,229 @@
-import React, { useContext, useState } from "react";
-import { AuthContext } from "../contexts/AuthContext";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+import Loading from "../loading/Loading";
 
-const DashBoardAdmin = () => {
-  const { user } = useContext(AuthContext);
+const AdminDashboard = () => {
+  const [users, setUsers] = useState([]);
+  const [contests, setContests] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingContests, setLoadingContests] = useState(true);
 
-  // Hardcoded demo data for Admin Dashboard
-  const allUsers = [
-    {
-      id: 1,
-      name: "Kablu Bhai",
-      email: "kablumiya@gmail.com",
-      role: "Creator",
-      photo: "https://i.ibb.co/vxshgcjY/Full-Logo.png",
-    },
-    {
-      id: 2,
-      name: "John Doe",
-      email: "john@example.com",
-      role: "User",
-      photo: "https://via.placeholder.com/100",
-    },
-    {
-      id: 3,
-      name: "Admin Pro",
-      email: "admin@example.com",
-      role: "Admin",
-      photo: "https://via.placeholder.com/100",
-    },
-    {
-      id: 4,
-      name: "Sarah Creator",
-      email: "sarah@example.com",
-      role: "Creator",
-      photo: "https://via.placeholder.com/100",
-    },
-    {
-      id: 5,
-      name: "Mike Contestant",
-      email: "mike@example.com",
-      role: "User",
-      photo: "https://via.placeholder.com/100",
-    },
-  ];
-
-  const allContests = [
-    {
-      id: 1,
-      name: "Pixel Art Challenge",
-      creatorEmail: "kablumiya@gmail.com",
-      creatorName: "Kablu Bhai",
-      entryFee: 150,
-      prizeMoney: 2000,
-      status: "Pending",
-    },
-    {
-      id: 2,
-      name: "Logo Design Masters",
-      creatorEmail: "sarah@example.com",
-      creatorName: "Sarah Creator",
-      entryFee: 200,
-      prizeMoney: 5000,
-      status: "Pending",
-    },
-    {
-      id: 3,
-      name: "Nature Photography 2025",
-      creatorEmail: "john@example.com",
-      creatorName: "John Doe",
-      entryFee: 100,
-      prizeMoney: 3000,
-      status: "Confirmed",
-    },
-    {
-      id: 4,
-      name: "Meme Battle Royale",
-      creatorEmail: "kablumiya@gmail.com",
-      creatorName: "Kablu Bhai",
-      entryFee: 100,
-      prizeMoney: 1500,
-      status: "Rejected",
-    },
-  ];
-
-  const [users, setUsers] = useState(allUsers);
-  const [contests, setContests] = useState(allContests);
-
-  // Handle role change
-  const handleRoleChange = (userId, newRole) => {
-    setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-    alert(`User role updated to ${newRole}!`);
+  // Fetch Users
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await axios.get("http://localhost:3000/admin/users");
+      setUsers(res.data);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to load users", "error");
+    } finally {
+      setLoadingUsers(false);
+    }
   };
 
-  // Handle contest actions
-  const handleContestAction = (contestId, action) => {
-    if (action === "delete") {
-      setContests(contests.filter((c) => c.id !== contestId));
-      alert("Contest deleted permanently!");
-    } else {
-      setContests(
-        contests.map((c) =>
-          c.id === contestId
-            ? { ...c, status: action === "confirm" ? "Confirmed" : "Rejected" }
-            : c
-        )
+  // Fetch Contests
+  const fetchContests = async () => {
+    try {
+      setLoadingContests(true);
+      const res = await axios.get("http://localhost:3000/admin/contests");
+      setContests(res.data);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to load contests", "error");
+    } finally {
+      setLoadingContests(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchContests();
+  }, []);
+
+  // Change User Role
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await axios.patch(`http://localhost:3000/admin/users/${userId}/role`, {
+        role: newRole,
+      });
+      Swal.fire("Success!", `Role changed to ${newRole}`, "success");
+      fetchUsers();
+    } catch (err) {
+      Swal.fire("Error", "Failed to change role", "error");
+    }
+  };
+
+  // Update Contest Status
+  const handleContestStatus = async (contestId, status) => {
+    try {
+      await axios.patch(
+        `http://localhost:3000/admin/contests/${contestId}/status`,
+        { status }
       );
-      alert(`Contest ${action === "confirm" ? "approved" : "rejected"}!`);
+      Swal.fire("Success!", `Contest ${status.toLowerCase()}`, "success");
+      fetchContests();
+    } catch (err) {
+      Swal.fire("Error", "Failed to update status", "error");
+    }
+  };
+
+  // Delete Contest
+  const handleDeleteContest = async (contestId) => {
+    const result = await Swal.fire({
+      title: "Delete Contest?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it",
+      confirmButtonColor: "#ef4444",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await axios.delete(`http://localhost:3000/admin/contests/${contestId}`);
+      Swal.fire("Deleted!", "Contest removed permanently", "success");
+      fetchContests();
+    } catch (err) {
+      Swal.fire("Error", "Failed to delete contest", "error");
     }
   };
 
   return (
     <div className="container mx-auto p-6 space-y-12">
-      {/* Admin Dashboard Header */}
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-lg text-gray-600">
-          Welcome, {user?.displayName || user?.email || "Admin"}! Manage users
-          and contests.
-        </p>
+        <p className="text-lg text-gray-600">Manage users and contests</p>
       </div>
 
-      {/* Manage Users Table */}
+      {/* Manage Users */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-bold mb-8 text-center">Manage Users</h2>
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Photo</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Current Role</th>
-                <th>Change Role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <div className="avatar">
-                      <div className="w-12 rounded-full">
-                        <img src={u.photo} alt={u.name} />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="font-medium">{u.name}</td>
-                  <td>{u.email}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        u.role === "Admin"
-                          ? "badge-error"
-                          : u.role === "Creator"
-                          ? "badge-primary"
-                          : "badge-success"
-                      }`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td>
-                    <select
-                      value={u.role}
-                      onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                      className="select select-bordered select-sm w-full max-w-xs"
-                    >
-                      <option>User</option>
-                      <option>Creator</option>
-                      <option>Admin</option>
-                    </select>
-                  </td>
+        <h2 className="text-3xl font-bold mb-6 text-center">Manage Users</h2>
+        {loadingUsers ? (
+          <Loading />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Current Role</th>
+                  <th>Change Role</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user._id}>
+                    <td className="font-medium">{user.name || "N/A"}</td>
+                    <td>{user.email}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          user.role === "Admin"
+                            ? "badge-error"
+                            : user.role === "Creator"
+                            ? "badge-primary"
+                            : "badge-success"
+                        }`}
+                      >
+                        {user.role || "User"}
+                      </span>
+                    </td>
+                    <td className="space-x-2">
+                      <select
+                        value={user.role}
+                        onChange={(e) =>
+                          handleRoleChange(user._id, e.target.value)
+                        }
+                        className="select select-bordered select-sm"
+                      >
+                        <option>User</option>
+                        <option>Creator</option>
+                        <option>Admin</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
-      {/* Manage Contests Table */}
+      {/* Manage Contests */}
       <section className="bg-base-200 p-8 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-bold mb-8 text-center">Manage Contests</h2>
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Contest Name</th>
-                <th>Creator</th>
-                <th>Entry Fee</th>
-                <th>Prize</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contests.map((contest) => (
-                <tr key={contest.id}>
-                  <td className="font-medium">{contest.name}</td>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span>{contest.creatorName}</span>
-                      <span className="text-sm text-gray-500">
-                        ({contest.creatorEmail})
+        <h2 className="text-3xl font-bold mb-6 text-center">Manage Contests</h2>
+        {loadingContests ? (
+          <Loading />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Contest Name</th>
+                  <th>Creator Email</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contests.map((contest) => (
+                  <tr key={contest._id}>
+                    <td className="font-medium">{contest.name}</td>
+                    <td>{contest.creatorEmail}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          contest.status === "Confirmed"
+                            ? "badge-success"
+                            : contest.status === "Rejected"
+                            ? "badge-error"
+                            : "badge-warning"
+                        }`}
+                      >
+                        {contest.status || "Pending"}
                       </span>
-                    </div>
-                  </td>
-                  <td>৳{contest.entryFee}</td>
-                  <td>৳{contest.prizeMoney}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        contest.status === "Confirmed"
-                          ? "badge-success"
-                          : contest.status === "Rejected"
-                          ? "badge-error"
-                          : "badge-warning"
-                      }`}
-                    >
-                      {contest.status}
-                    </span>
-                  </td>
-                  <td className="space-x-2">
-                    {contest.status === "Pending" && (
-                      <>
+                    </td>
+                    <td className="space-x-2">
+                      {contest.status !== "Confirmed" && (
                         <button
                           onClick={() =>
-                            handleContestAction(contest.id, "confirm")
+                            handleContestStatus(contest._id, "Confirmed")
                           }
                           className="btn btn-sm btn-success"
                         >
                           Confirm
                         </button>
+                      )}
+                      {contest.status !== "Rejected" && (
                         <button
                           onClick={() =>
-                            handleContestAction(contest.id, "reject")
+                            handleContestStatus(contest._id, "Rejected")
                           }
                           className="btn btn-sm btn-warning"
                         >
                           Reject
                         </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => handleContestAction(contest.id, "delete")}
-                      className="btn btn-sm btn-error"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      )}
+                      <button
+                        onClick={() => handleDeleteContest(contest._id)}
+                        className="btn btn-sm btn-error"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );
 };
 
-export default DashBoardAdmin;
+export default AdminDashboard;

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, {  useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -6,13 +6,14 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { AuthContext } from "../contexts/AuthContext";
 import Loading from "../loading/Loading";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
-export default function Dashboard() {
-  const { user } = useContext(AuthContext);
+const EditContest = () => {
+ 
+  const { id } = useParams(); // contestId from URL
   const navigate = useNavigate();
 
-  const [myContests, setMyContests] = useState([]);
+  const [contest, setContest] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const {
@@ -20,30 +21,42 @@ export default function Dashboard() {
     handleSubmit,
     setValue,
     watch,
-    reset,
     formState: { errors },
   } = useForm();
   const deadline = watch("deadline");
 
-  const fetchMyContests = async () => {
-    if (!user?.email) return;
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `http://localhost:3000/my-contests/${user.email}`
-      );
-      setMyContests(res.data);
-    } catch {
-      Swal.fire("Error", "Could not load contests", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Fetch contest data
   useEffect(() => {
-    fetchMyContests();
-  }, [user?.email]);
+    const fetchContest = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`http://localhost:3000/contests/${id}`);
+        const c = res.data;
 
+        setContest(c);
+
+        // Pre-fill form
+        setValue("name", c.name);
+        setValue("image", c.bannerImage);
+        setValue("description", c.description);
+        setValue("price", c.entryFee);
+        setValue("prizeMoney", c.prizeMoney);
+        setValue("taskInstruction", c.taskDetails);
+        setValue("contestType", c.contentType);
+        setValue("deadline", new Date(c.deadline));
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Failed to load contest", "error");
+        navigate("/dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContest();
+  }, [id, setValue, navigate]);
+
+  // Update contest
   const onSubmit = async (data) => {
     try {
       const payload = {
@@ -54,114 +67,96 @@ export default function Dashboard() {
         prizeMoney: Number(data.prizeMoney),
         taskInstruction: data.taskInstruction,
         contestType: data.contestType,
-        creatorEmail: user.email,
         deadline: data.deadline.toISOString(),
       };
 
-      await axios.post("http://localhost:3000/api/contests", payload);
+      await axios.patch(`http://localhost:3000/api/contests/${id}`, payload);
 
-      Swal.fire("Success", "Contest created (Pending)", "success");
-      reset();
-      fetchMyContests();
+      Swal.fire("Success!", "Contest updated successfully", "success");
+      navigate("/dashboard");
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.message || "Failed", "error");
-    }
-  };
-
-  const handleEditContest = (contest) => {
-    if (contest.status !== "Pending") {
-      return Swal.fire(
-        "Not Allowed",
-        "Only pending contests can be edited",
-        "info"
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to update",
+        "error"
       );
     }
-    navigate(`/edit-contest/${contest._id}`);
   };
 
-  const handleDeleteContest = async (contestId) => {
-    const result = await Swal.fire({
-      title: "Delete Contest?",
-      text: "This action cannot be undone!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it",
-      confirmButtonColor: "#ef4444",
-      cancelButtonText: "Cancel",
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      await axios.delete(`http://localhost:3000/creator/contests/${contestId}`);
-
-      Swal.fire("Deleted!", "Contest removed permanently", "success");
-
-      // Refresh list
-      fetchMyContests();
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to delete contest", "error");
-    }
-  };
   if (loading) return <Loading />;
 
-  return (
-    <div className="container mx-auto p-6 space-y-12">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold">Creator Dashboard</h1>
-        <p className="text-gray-600">
-          Welcome, {user?.displayName || user?.email}
+  if (contest?.status !== "Pending") {
+    return (
+      <div className="container mx-auto p-10 text-center">
+        <p className="text-xl text-gray-600">
+          Only pending contests can be edited.
         </p>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="btn btn-primary mt-6"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6">
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-bold">Edit Contest</h1>
+        <p className="text-gray-600 mt-2">Update your contest details</p>
       </div>
 
-      {/* Add Contest */}
-      <section className="bg-base-200 p-8 rounded-xl">
-        <h2 className="text-2xl font-bold mb-6 text-center">Add Contest</h2>
-
+      <section className="bg-base-200 p-8 rounded-xl shadow-lg max-w-4xl mx-auto">
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-base-100 p-6 rounded-xl"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-base-100 p-8 rounded-xl"
         >
-          <div>
+          {/* Contest Name */}
+          <div className="md:col-span-2">
             <label className="label">
               <span className="label-text font-semibold">Contest Name</span>
             </label>
             <input
-              {...register("name", { required: "Contest name required" })}
+              {...register("name", { required: "Contest name is required" })}
+              type="text"
               className="input input-bordered w-full"
-              placeholder="Contest Name"
             />
             {errors.name && (
               <p className="text-error text-sm mt-1">{errors.name.message}</p>
             )}
           </div>
 
-          <div>
+          {/* Banner Image URL */}
+          <div className="md:col-span-2">
             <label className="label">
               <span className="label-text font-semibold">Banner Image URL</span>
             </label>
             <input
               {...register("image", {
-                required: "Image URL required",
+                required: "Image URL is required",
                 pattern: { value: /^https:\/\//, message: "Must be HTTPS URL" },
               })}
+              type="url"
               className="input input-bordered w-full"
-              placeholder="https://images.unsplash.com/..."
             />
             {errors.image && (
               <p className="text-error text-sm mt-1">{errors.image.message}</p>
             )}
           </div>
 
+          {/* Description */}
           <div className="md:col-span-2">
             <label className="label">
               <span className="label-text font-semibold">Description</span>
             </label>
             <textarea
-              {...register("description", { required: "Description required" })}
+              {...register("description", {
+                required: "Description is required",
+              })}
+              rows="4"
               className="textarea textarea-bordered w-full"
-              placeholder="Description"
             />
             {errors.description && (
               <p className="text-error text-sm mt-1">
@@ -170,6 +165,7 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Entry Fee & Prize Money */}
           <div>
             <label className="label">
               <span className="label-text font-semibold">Entry Fee (৳)</span>
@@ -177,15 +173,11 @@ export default function Dashboard() {
             <input
               {...register("price", {
                 required: "Entry fee required",
-                validate: {
-                  isNumber: (v) => !isNaN(v) || "Must be number",
-                  min: (v) => Number(v) >= 100 || "Minimum ৳100",
-                },
+                validate: (v) => Number(v) >= 100 || "Minimum ৳100",
               })}
               type="number"
               min="100"
               className="input input-bordered w-full"
-              placeholder="159"
             />
             {errors.price && (
               <p className="text-error text-sm mt-1">{errors.price.message}</p>
@@ -197,14 +189,9 @@ export default function Dashboard() {
               <span className="label-text font-semibold">Prize Money (৳)</span>
             </label>
             <input
-              {...register("prizeMoney", {
-                required: "Prize money required",
-                validate: (v) =>
-                  (!isNaN(v) && v > 0) || "Must be valid number > 0",
-              })}
+              {...register("prizeMoney", { required: "Prize money required" })}
               type="number"
               className="input input-bordered w-full"
-              placeholder="10000"
             />
             {errors.prizeMoney && (
               <p className="text-error text-sm mt-1">
@@ -213,6 +200,7 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Task Instruction */}
           <div className="md:col-span-2">
             <label className="label">
               <span className="label-text font-semibold">Task Instruction</span>
@@ -221,8 +209,9 @@ export default function Dashboard() {
               {...register("taskInstruction", {
                 required: "Task instruction required",
               })}
+              defaultValue={contest?.taskDetails || ""}
+              rows="4"
               className="textarea textarea-bordered w-full"
-              placeholder="Task Instruction"
             />
             {errors.taskInstruction && (
               <p className="text-error text-sm mt-1">
@@ -231,15 +220,19 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Contest Type */}
           <div>
             <label className="label">
               <span className="label-text font-semibold">Contest Type</span>
             </label>
             <select
               {...register("contestType", { required: "Select contest type" })}
+              defaultValue={contest?.contentType || ""} // ← This forces correct pre-fill
               className="select select-bordered w-full"
             >
-              <option value="">Select Type</option>
+              <option value="" disabled>
+                Select Type
+              </option>
               <option>Logo Design</option>
               <option>Gaming</option>
               <option>Article Writing</option>
@@ -252,7 +245,7 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-
+          {/* Deadline */}
           <div>
             <label className="label">
               <span className="label-text font-semibold">Deadline</span>
@@ -261,66 +254,27 @@ export default function Dashboard() {
               selected={deadline}
               onChange={(date) => setValue("deadline", date)}
               showTimeSelect
+              timeFormat="HH:mm"
+              dateFormat="yyyy-MM-dd HH:mm"
+              minDate={new Date()}
               className="input input-bordered w-full"
-              placeholderText="Select deadline"
+              placeholderText="Select date & time"
             />
             {!deadline && (
               <p className="text-error text-sm mt-1">Deadline required</p>
             )}
           </div>
 
+          {/* Update Button */}
           <div className="md:col-span-2 text-center">
-            <button type="submit" className="btn btn-primary btn-wide">
-              Create Contest
+            <button type="submit" className="btn btn-primary btn-wide text-xl">
+              Update Contest
             </button>
           </div>
         </form>
       </section>
-
-      {/* My Contests */}
-      <section className="bg-base-200 p-8 rounded-xl">
-        <h2 className="text-2xl font-bold mb-6 text-center">My Contests</h2>
-
-        <table className="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Prize</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {myContests.map((c) => (
-              <tr key={c._id}>
-                <td>{c.name}</td>
-                <td>৳{c.prizeMoney}</td>
-                <td>{c.status}</td>
-                <td className="flex gap-2 flex-wrap">
-                  <button
-                    className="btn btn-sm btn-info"
-                    onClick={() => handleEditContest(c)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-error"
-                    onClick={() => handleDeleteContest(c._id)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    className="btn btn-sm btn-success"
-                    onClick={() => navigate(`/see-submissions/${c._id}`)}
-                  >
-                    See Submissions
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
     </div>
   );
-}
+};
+
+export default EditContest;

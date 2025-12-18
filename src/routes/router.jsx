@@ -13,6 +13,8 @@ import PrivetRoute from "./PrivetRoute";
 import PaymentSuccess from "../pages/PaymentSuccess";
 import DashBoardUser from "../pages/DashBoardUser";
 import DashBoardAdmin from "../pages/DashBoardAdmin";
+import SeeSubmisson from "../pages/SeeSubmisson";
+import EditContest from "../pages/EditContest";
 
 export const router = createBrowserRouter([
   {
@@ -36,7 +38,16 @@ export const router = createBrowserRouter([
           </PrivetRoute>
         ),
       },
+      {
+        path: "/see-submissions/:contestId",
+        element: (
+          <PrivetRoute>
+           <SeeSubmisson />
+          </PrivetRoute>
+        ),
+      },
       { path: "/payment-success", element: <PaymentSuccess />},
+      {path:"/edit-contest/:id", element: <EditContest /> }
     ],
   },
 ]);
