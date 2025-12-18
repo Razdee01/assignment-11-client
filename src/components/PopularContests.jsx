@@ -33,11 +33,11 @@ const PopularContests = () => {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
         {contests.map((contest) => (
           <div
             key={contest._id}
-            className="border rounded-xl shadow-md p-4 bg-white"
+            className="border rounded-xl shadow-lg p-4 bg-white hover:scale-105 transition-transform duration-300"
           >
             <img
               src={contest.bannerImage}
@@ -57,7 +57,7 @@ const PopularContests = () => {
 
             <Link
               to={`contests/${contest._id}`}
-              className="mt-4 w-full text-center inline-block px-4 py-2 bg-green-600 text-white rounded-lg"
+              className="mt-4 w-full text-center inline-block px-4 py-2 bg-blue-800 text-white rounded-lg"
             >
               View Details
             </Link>

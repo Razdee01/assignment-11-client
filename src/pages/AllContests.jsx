@@ -100,7 +100,7 @@ const AllContests = () => {
           {paginatedContests.map((contest) => (
             <div
               key={contest._id}
-              className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300"
+              className="card bg-base-100 shadow-xl hover:shadow-2xl  transition-all duration-300"
             >
               <figure>
                 <img
