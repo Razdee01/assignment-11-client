@@ -1,20 +1,21 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import Rootlayout from "../layouts/Rootlayout";
 import Home from "../pages/Home";
 import AllContests from "../pages/AllContests";
-import ContactUs from "../pages/HowItWorks";
-import Error from "../components/Error";
 import HowItWorks from "../pages/HowItWorks";
+import Error from "../components/Error";
 import Login from "../pages/Login";
 import Registration from "../pages/Registration";
-import DashBoard from "../pages/DashBoard";
 import ContestDetails from "../pages/ContestDetails";
-import PrivetRoute from "./PrivetRoute";
 import PaymentSuccess from "../pages/PaymentSuccess";
 import DashBoardUser from "../pages/DashBoardUser";
+import Dashboard from "../pages/DashBoard"; // Creator
 import DashBoardAdmin from "../pages/DashBoardAdmin";
 import SeeSubmisson from "../pages/SeeSubmisson";
 import EditContest from "../pages/EditContest";
+import PrivetRoute from "./PrivetRoute";
+import RoleRedirect from "../pages/RoleRedirect";
+// import RoleRedirect from "../components/RoleRedirect"; // ← Import
 
 export const router = createBrowserRouter([
   {
@@ -25,29 +26,72 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "all-contests", element: <AllContests /> },
       { path: "how-it-works", element: <HowItWorks /> },
-      { path: "/login", element: <Login /> },
-      { path: "/registration", element: <Registration /> },
-      { path: "/dashboard", element: <DashBoard /> },
-      { path: "/dashboardAdmin", element: <DashBoardAdmin /> },
-      { path: "/dashboarduser", element: <DashBoardUser /> },
+      { path: "login", element: <Login /> },
+      { path: "registration", element: <Registration /> },
+
+      // Public pages
+      { path: "contests/:id", element: <ContestDetails /> },
+      { path: "payment-success", element: <PaymentSuccess /> },
+
+      // Main dashboard — redirect by role
       {
-        path: "/contests/:id",
+        path: "/dashboard",
         element: (
           <PrivetRoute>
-            <ContestDetails />
+            <RoleRedirect />
           </PrivetRoute>
         ),
       },
+
+      // User Dashboard
+      {
+        path: "/dashboard/user",
+        element: (
+          <PrivetRoute allowedRoles={["User"]}>
+            <DashBoardUser />
+          </PrivetRoute>
+        ),
+      },
+
+      // Creator Dashboard
+      {
+        path: "/dashboard/creator",
+        element: (
+          <PrivetRoute allowedRoles={["Creator"]}>
+            <Dashboard />
+          </PrivetRoute>
+        ),
+      },
+
+      // Admin Dashboard
+      {
+        path: "/dashboard/admin",
+        element: (
+          <PrivetRoute allowedRoles={["Admin"]}>
+            <DashBoardAdmin />
+          </PrivetRoute>
+        ),
+      },
+
+      // See Submissions (Creator or Admin)
       {
         path: "/see-submissions/:contestId",
         element: (
-          <PrivetRoute>
-           <SeeSubmisson />
+          <PrivetRoute allowedRoles={["Creator", "Admin"]}>
+            <SeeSubmisson />
           </PrivetRoute>
         ),
       },
-      { path: "/payment-success", element: <PaymentSuccess />},
-      {path:"/edit-contest/:id", element: <EditContest /> }
+
+      // Edit Contest (Creator only)
+      {
+        path: "/edit-contest/:id",
+        element: (
+          <PrivetRoute allowedRoles={["Creator"]}>
+            <EditContest />
+          </PrivetRoute>
+        ),
+      },
     ],
   },
 ]);

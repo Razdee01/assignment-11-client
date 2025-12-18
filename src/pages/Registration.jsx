@@ -1,167 +1,243 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import Swal from "sweetalert2";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
+import { useContext } from "react";
 import { AuthContext } from "../contexts/AuthContext";
 import axios from "axios";
+import { auth } from "../firebase/firebase.config";
 
 const Registration = () => {
   const { createUser, googleSignIn, updateUserProfile } =
     useContext(AuthContext);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
-  const [error, setError] = useState();
-  const [success, setSuccess] = useState();
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     setError("");
-    setSuccess("");
-
-    const profileImg = data.photo[0];
+    setLoading(true);
 
     if (data.password.length < 6) {
-      return setError("Password must be at least 6 characters!");
+      setError("Password must be at least 6 characters");
+      setLoading(false);
+      return;
     }
 
-    createUser(data.email, data.password)
-      .then(() => {
-      
+    try {
+      // Create user
+      await createUser(data.email, data.password);
 
-        // Upload image
+      let imgURL = "";
+
+      // Upload image if provided
+      if (data.photo && data.photo[0]) {
         const formData = new FormData();
-        formData.append("image", profileImg);
-        const imgbbApiKey = `https://api.imgbb.com/1/upload?key=${
-          import.meta.env.VITE_image_host
-        }`;
+        formData.append("image", data.photo[0]);
 
-        
+        const imgbbApiKey = import.meta.env.VITE_image_host;
+        const res = await axios.post(
+          `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
+          formData
+        );
 
-        return axios.post(imgbbApiKey, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-      })
-      .then((res) => {
-        
-
-        if (!res.data || !res.data.data || !res.data.data.display_url) {
-          throw new Error("Image upload failed, no display URL");
+        if (!res.data?.data?.display_url) {
+          throw new Error("Image upload failed");
         }
 
-        const imgURL = res.data.data.display_url;
+        imgURL = res.data.data.display_url;
+      }
 
-        const userProfile = {
-          displayName: data.name,
-          photoURL: imgURL,
-        };
-
-       
-
-        return updateUserProfile(userProfile);
-      })
-      .then(() => {
-      
-
-        Swal.fire({
-          icon: "success",
-          title: "Registration Successful!",
-          text: "Your account has been created.",
-        });
-
-        navigate("/");
-      })
-      .catch((err) => {
-       
-        setError(err.message || "Something went wrong");
+      // Update Firebase profile
+      await updateUserProfile({
+        displayName: data.name,
+        photoURL: imgURL,
       });
-  };
 
-  const handleGoogle = async () => {
-    try {
-       await googleSignIn();
-    
+      // Save to MongoDB
+      await axios.post("http://localhost:3000/save-user", {
+        uid: auth.currentUser.uid,
+        name: data.name,
+        email: data.email,
+        photo: imgURL,
+      });
 
       Swal.fire({
         icon: "success",
         title: "Registration Successful!",
-        text: "Your account has been created.",
+        text: "Welcome to ContestHub!",
       });
       navigate("/");
     } catch (err) {
-     
-      setError(err.message);
+      console.error(err);
+      setError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await googleSignIn();
+      const firebaseUser = result.user;
+
+      // Save Google user to DB (photoURL included!)
+      await axios.post("http://localhost:3000/save-user", {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Unknown",
+        email: firebaseUser.email,
+        photo: firebaseUser.photoURL || "",
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Registered with Google!",
+        text: "Welcome!",
+      });
+      navigate("/");
+    } catch (err) {
+      setError(err.message || "Google signup failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded-xl">
-      <h2 className="text-2xl font-bold mb-4">Create an Account</h2>
+    <div className="min-h-screen bg-base-200 flex items-center justify-center py-12 px-4">
+      <div className="card bg-base-100 w-full max-w-lg shadow-2xl">
+        <div className="card-body p-10">
+          <h2 className="card-title text-4xl font-bold text-center mb-10">
+            Create an Account
+          </h2>
 
-      {error && <p className="text-red-500 mb-2">{error}</p>}
-      {success && <p className="text-green-600 mb-2">{success}</p>}
+          {error && (
+            <div className="alert alert-error shadow-lg mb-6">
+              <span>{error}</span>
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <input
-          type="text"
-          placeholder="Full Name"
-          className="border p-2 w-full rounded mb-3"
-          {...register("name", { required: "Name is required" })}
-        />
-        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="form-control">
+              <input
+                type="text"
+                placeholder="Full Name"
+                {...register("name", { required: "Name is required" })}
+                className="input input-lg input-bordered w-full"
+              />
+              {errors.name && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.name.message}
+                  </span>
+                </label>
+              )}
+            </div>
 
-        <input
-          type="email"
-          placeholder="Email Address"
-          className="border p-2 w-full rounded mb-3"
-          {...register("email", { required: "Email is required" })}
-        />
-        {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+            <div className="form-control">
+              <input
+                type="email"
+                placeholder="Email Address"
+                {...register("email", { required: "Email is required" })}
+                className="input input-lg input-bordered w-full"
+              />
+              {errors.email && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.email.message}
+                  </span>
+                </label>
+              )}
+            </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="border p-2 w-full rounded mb-3"
-          {...register("password", { required: "Password is required" })}
-        />
-        {errors.password && (
-          <p className="text-red-500">{errors.password.message}</p>
-        )}
+            <div className="form-control">
+              <input
+                type="password"
+                placeholder="Password"
+                {...register("password", { required: "Password is required" })}
+                className="input input-lg input-bordered w-full"
+              />
+              {errors.password && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.password.message}
+                  </span>
+                </label>
+              )}
+            </div>
 
-        <input
-          type="file"
-          accept="image/*"
-          className="border p-2 w-full rounded mb-3"
-          {...register("photo")}
-        />
+            <div className="form-control">
+              <input
+                type="file"
+                accept="image/*"
+                {...register("photo")}
+                className="file-input file-input-bordered file-input-lg w-full"
+              />
+              <label className="label">
+                <span className="label-text-alt">Upload photo (optional)</span>
+              </label>
+            </div>
 
-        <button
-          type="submit"
-          className="w-full bg-black text-white py-2 rounded"
-        >
-          Register
-        </button>
-      </form>
+            <div className="form-control mt-8">
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary btn-lg w-full text-xl"
+              >
+                {loading ? "Creating Account..." : "Register"}
+              </button>
+            </div>
+          </form>
 
-      <div className="mt-4 text-center">
-        <button
-          onClick={handleGoogle}
-          className="btn bg-white text-black border-[#e5e5e5] w-full"
-        >
-          Google Sign-in
-        </button>
+          <div className="divider my-8 text-lg">OR</div>
+
+          <button
+            onClick={handleGoogle}
+            disabled={loading}
+            className="btn btn-outline btn-lg w-full text-lg"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 512 512"
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-3"
+            >
+              <path
+                fill="#4285F4"
+                d="M386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"
+              />
+              <path
+                fill="#34A853"
+                d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"
+              />
+              <path
+                fill="#FBBC02"
+                d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"
+              />
+              <path
+                fill="#EA4335"
+                d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"
+              />
+            </svg>
+            {loading ? "Signing up..." : "Continue with Google"}
+          </button>
+
+          <p className="text-center mt-8 text-lg">
+            Already have an account?{" "}
+            <Link to="/login" className="link link-primary font-bold text-lg">
+              Login
+            </Link>
+          </p>
+        </div>
       </div>
-
-      <p className="text-center mt-3">
-        Already have an account?{" "}
-        <Link to="/login" className="text-blue-500 font-semibold">
-          Login
-        </Link>
-      </p>
     </div>
   );
 };

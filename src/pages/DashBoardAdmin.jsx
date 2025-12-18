@@ -43,14 +43,28 @@ const AdminDashboard = () => {
   }, []);
 
   // Change User Role
-  const handleRoleChange = async (userId, newRole) => {
+  const handleRoleChange = async (userId, currentRole, newRole) => {
+    if (currentRole === newRole) return;
+
+    const confirm = await Swal.fire({
+      title: "Change Role?",
+      text: `Change role to ${newRole}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
       await axios.patch(`http://localhost:3000/admin/users/${userId}/role`, {
         role: newRole,
       });
-      Swal.fire("Success!", `Role changed to ${newRole}`, "success");
+      Swal.fire("Success!", `Role updated to ${newRole}`, "success");
       fetchUsers();
     } catch (err) {
+      console.error(err);
       Swal.fire("Error", "Failed to change role", "error");
     }
   };
@@ -103,6 +117,10 @@ const AdminDashboard = () => {
         <h2 className="text-3xl font-bold mb-6 text-center">Manage Users</h2>
         {loadingUsers ? (
           <Loading />
+        ) : users.length === 0 ? (
+          <p className="text-center text-xl text-gray-500 py-10">
+            No users found
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-zebra w-full">
@@ -115,34 +133,38 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user._id}>
-                    <td className="font-medium">{user.name || "N/A"}</td>
-                    <td>{user.email}</td>
+                {users.map((u) => (
+                  <tr key={u._id}>
+                    <td className="font-medium">{u.name || "N/A"}</td>
+                    <td>{u.email}</td>
                     <td>
                       <span
                         className={`badge ${
-                          user.role === "Admin"
+                          u.role === "Admin"
                             ? "badge-error"
-                            : user.role === "Creator"
+                            : u.role === "Creator"
                             ? "badge-primary"
                             : "badge-success"
                         }`}
                       >
-                        {user.role || "User"}
+                        {u.role || "User"}
                       </span>
                     </td>
-                    <td className="space-x-2">
+                    <td>
                       <select
-                        value={user.role}
+                        value={u.role || "User"}
                         onChange={(e) =>
-                          handleRoleChange(user._id, e.target.value)
+                          handleRoleChange(
+                            u._id,
+                            u.role || "User",
+                            e.target.value
+                          )
                         }
-                        className="select select-bordered select-sm"
+                        className="select select-bordered select-sm w-full max-w-xs"
                       >
-                        <option>User</option>
-                        <option>Creator</option>
-                        <option>Admin</option>
+                        <option value="User">User</option>
+                        <option value="Creator">Creator</option>
+                        <option value="Admin">Admin</option>
                       </select>
                     </td>
                   </tr>
@@ -158,58 +180,60 @@ const AdminDashboard = () => {
         <h2 className="text-3xl font-bold mb-6 text-center">Manage Contests</h2>
         {loadingContests ? (
           <Loading />
+        ) : contests.length === 0 ? (
+          <p className="text-center text-xl text-gray-500 py-10">
+            No contests found
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-zebra w-full">
               <thead>
                 <tr>
                   <th>Contest Name</th>
-                  <th>Creator Email</th>
+                  <th>Creator</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {contests.map((contest) => (
-                  <tr key={contest._id}>
-                    <td className="font-medium">{contest.name}</td>
-                    <td>{contest.creatorEmail}</td>
+                {contests.map((c) => (
+                  <tr key={c._id}>
+                    <td className="font-medium">{c.name}</td>
+                    <td>{c.creatorEmail}</td>
                     <td>
                       <span
                         className={`badge ${
-                          contest.status === "Confirmed"
+                          c.status === "Confirmed"
                             ? "badge-success"
-                            : contest.status === "Rejected"
+                            : c.status === "Rejected"
                             ? "badge-error"
                             : "badge-warning"
                         }`}
                       >
-                        {contest.status || "Pending"}
+                        {c.status || "Pending"}
                       </span>
                     </td>
                     <td className="space-x-2">
-                      {contest.status !== "Confirmed" && (
+                      {c.status !== "Confirmed" && (
                         <button
                           onClick={() =>
-                            handleContestStatus(contest._id, "Confirmed")
+                            handleContestStatus(c._id, "Confirmed")
                           }
                           className="btn btn-sm btn-success"
                         >
                           Confirm
                         </button>
                       )}
-                      {contest.status !== "Rejected" && (
+                      {c.status !== "Rejected" && (
                         <button
-                          onClick={() =>
-                            handleContestStatus(contest._id, "Rejected")
-                          }
+                          onClick={() => handleContestStatus(c._id, "Rejected")}
                           className="btn btn-sm btn-warning"
                         >
                           Reject
                         </button>
                       )}
                       <button
-                        onClick={() => handleDeleteContest(contest._id)}
+                        onClick={() => handleDeleteContest(c._id)}
                         className="btn btn-sm btn-error"
                       >
                         Delete
