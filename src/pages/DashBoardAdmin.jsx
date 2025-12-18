@@ -14,7 +14,7 @@ const AdminDashboard = () => {
     try {
       setLoadingUsers(true);
       const res = await axios.get(
-        "http://assignment-11-server-five-flax.vercel.app/admin/users"
+        "https://assignment-11-server-five-flax.vercel.app/admin/users"
       );
       setUsers(res.data);
     } catch (err) {
@@ -30,7 +30,7 @@ const AdminDashboard = () => {
     try {
       setLoadingContests(true);
       const res = await axios.get(
-        "http://assignment-11-server-five-flax.vercel.app/admin/contests"
+        "https://assignment-11-server-five-flax.vercel.app/admin/contests"
       );
       setContests(res.data);
     } catch (err) {
@@ -63,7 +63,7 @@ const AdminDashboard = () => {
 
     try {
       await axios.patch(
-        `http://assignment-11-server-five-flax.vercel.app/admin/users/${userId}/role`,
+        `https://assignment-11-server-five-flax.vercel.app/admin/users/${userId}/role`,
         {
           role: newRole,
         }
@@ -80,7 +80,7 @@ const AdminDashboard = () => {
   const handleContestStatus = async (contestId, status) => {
     try {
       await axios.patch(
-        `http://assignment-11-server-five-flax.vercel.app/admin/contests/${contestId}/status`,
+        `https://assignment-11-server-five-flax.vercel.app/admin/contests/${contestId}/status`,
         { status }
       );
       Swal.fire("Success!", `Contest ${status.toLowerCase()}`, "success");
@@ -105,7 +105,7 @@ const AdminDashboard = () => {
 
     try {
       await axios.delete(
-        `http://assignment-11-server-five-flax.vercel.app/admin/contests/${contestId}`
+        `https://assignment-11-server-five-flax.vercel.app/admin/contests/${contestId}`
       );
       Swal.fire("Deleted!", "Contest removed permanently", "success");
       fetchContests();
