@@ -27,7 +27,7 @@ const DeshBoardUser = () => {
       try {
         setLoadingParticipated(true);
         const response = await axios.get(
-          `http://localhost:3000/participated-contests/${user.email}`
+          `https://assignment-11-server-five-flax.vercel.app/participated-contests/${user.email}`
         );
         setParticipatedContests(response.data || []);
       } catch (error) {
@@ -46,7 +46,7 @@ const DeshBoardUser = () => {
       try {
         setLoadingWinnings(true);
         const response = await axios.get(
-          `http://localhost:3000/winning-contests/${user.email}`
+          `https://assignment-11-server-five-flax.vercel.app/winning-contests/${user.email}`
         );
         setWinningContests(response.data || []);
       } catch (error) {

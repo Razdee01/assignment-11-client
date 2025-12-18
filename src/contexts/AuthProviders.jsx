@@ -54,12 +54,15 @@ const AuthProviders = ({ children }) => {
     if (!firebaseUser?.email) return;
 
     try {
-      await axios.post("http://localhost:3000/save-user", {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || "Unknown",
-        email: firebaseUser.email,
-        photo: firebaseUser.photoURL || "",
-      });
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/save-user",
+        {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || "Unknown",
+          email: firebaseUser.email,
+          photo: firebaseUser.photoURL || "",
+        }
+      );
       console.log("User saved/updated in DB");
     } catch (err) {
       console.error("Failed to save user to DB:", err);
@@ -73,7 +76,7 @@ const AuthProviders = ({ children }) => {
         try {
           // Fetch role from your users collection
           const res = await axios.get(
-            `http://localhost:3000/user-role/${currentUser.email}`
+            `https://assignment-11-server-five-flax.vercel.app/user-role/${currentUser.email}`
           );
           const userWithRole = {
             ...currentUser,

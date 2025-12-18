@@ -9,7 +9,9 @@ const Leaderboard = () => {
   useEffect(() => {
     const fetchLeaders = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/all-contests");
+        const res = await axios.get(
+          "https://assignment-11-server-five-flax.vercel.app/all-contests"
+        );
         const allContests = res.data;
 
         // Filter only contests with winner and status Confirmed

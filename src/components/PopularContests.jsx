@@ -10,7 +10,9 @@ const PopularContests = () => {
   const { data: contests = [], isLoading } = useQuery({
     queryKey: ["popular-contests"],
     queryFn: async () => {
-      const res = await axios.get("http://localhost:3000/popular-contests");
+      const res = await axios.get(
+        "https://assignment-11-server-five-flax.vercel.app/popular-contests"
+      );
       return res.data;
     },
   });

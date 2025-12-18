@@ -30,7 +30,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const res = await axios.get(
-        `http://localhost:3000/my-contests/${user.email}`
+        `https://assignment-11-server-five-flax.vercel.app/my-contests/${user.email}`
       );
       setMyContests(res.data);
     } catch {
@@ -58,7 +58,10 @@ export default function Dashboard() {
         deadline: data.deadline.toISOString(),
       };
 
-      await axios.post("http://localhost:3000/api/contests", payload);
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/api/contests",
+        payload
+      );
 
       Swal.fire("Success", "Contest created (Pending)", "success");
       reset();
@@ -93,7 +96,9 @@ export default function Dashboard() {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:3000/creator/contests/${contestId}`);
+      await axios.delete(
+        `https://assignment-11-server-five-flax.vercel.app/creator/contests/${contestId}`
+      );
 
       Swal.fire("Deleted!", "Contest removed permanently", "success");
 

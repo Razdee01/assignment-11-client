@@ -24,7 +24,7 @@ export default function ContestDetails() {
     const fetchContest = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/contests/${id}`
+          `https://assignment-11-server-five-flax.vercel.app/contests/${id}`
         );
         setContest(data);
         const ended = new Date() > new Date(data.deadline);
@@ -46,9 +46,12 @@ export default function ContestDetails() {
     if (!id || !user?.email) return;
 
     axios
-      .get("http://localhost:3000/registrations/check", {
-        params: { contestId: id, email: user.email },
-      })
+      .get(
+        "https://assignment-11-server-five-flax.vercel.app/registrations/check",
+        {
+          params: { contestId: id, email: user.email },
+        }
+      )
       .then((res) => setIsRegistered(res.data.registered))
       .catch(console.error);
   }, [id, user?.email]);
@@ -58,9 +61,12 @@ export default function ContestDetails() {
     if (!id || !user?.email) return;
 
     axios
-      .get("http://localhost:3000/submissions/check", {
-        params: { contestId: id, email: user.email },
-      })
+      .get(
+        "https://assignment-11-server-five-flax.vercel.app/submissions/check",
+        {
+          params: { contestId: id, email: user.email },
+        }
+      )
       .then((res) => setHasSubmitted(res.data.submitted))
       .catch(console.error);
   }, [id, user?.email]);
@@ -119,7 +125,7 @@ export default function ContestDetails() {
       console.log("Sending payment data:", paymentData); // ← ADD THIS
 
       const { data } = await axios.post(
-        "http://localhost:3000/create-checkout-session",
+        "https://assignment-11-server-five-flax.vercel.app/create-checkout-session",
         paymentData
       );
 
@@ -157,11 +163,14 @@ export default function ContestDetails() {
     if (!taskLink) return;
 
     try {
-      await axios.post("http://localhost:3000/submit-task", {
-        contestId: id,
-        userEmail: user.email,
-        taskLink,
-      });
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/submit-task",
+        {
+          contestId: id,
+          userEmail: user.email,
+          taskLink,
+        }
+      );
 
       setHasSubmitted(true);
       Swal.fire("Success!", "Task submitted successfully!", "success");

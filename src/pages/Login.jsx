@@ -32,16 +32,19 @@ const Login = () => {
       const firebaseUser = result.user;
 
       // Save user to DB
-      await axios.post("http://localhost:3000/save-user", {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || "Unknown",
-        email: firebaseUser.email,
-        photo: firebaseUser.photoURL || "",
-      });
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/save-user",
+        {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || "Unknown",
+          email: firebaseUser.email,
+          photo: firebaseUser.photoURL || "",
+        }
+      );
 
       // Generate JWT token from backend
       const tokenRes = await axios.post(
-        "http://localhost:3000/generate-token",
+        "https://assignment-11-server-five-flax.vercel.app/generate-token",
         {
           email: firebaseUser.email,
         }
@@ -66,16 +69,19 @@ const Login = () => {
       const firebaseUser = result.user;
 
       // Save user to DB
-      await axios.post("http://localhost:3000/save-user", {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || "Unknown",
-        email: firebaseUser.email,
-        photo: firebaseUser.photoURL || "",
-      });
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/save-user",
+        {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || "Unknown",
+          email: firebaseUser.email,
+          photo: firebaseUser.photoURL || "",
+        }
+      );
 
       // Generate JWT token
       const tokenRes = await axios.post(
-        "http://localhost:3000/generate-token",
+        "https://assignment-11-server-five-flax.vercel.app/generate-token",
         {
           email: firebaseUser.email,
         }

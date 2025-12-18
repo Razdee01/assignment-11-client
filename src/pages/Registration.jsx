@@ -63,16 +63,19 @@ const Registration = () => {
       const firebaseUser = auth.currentUser;
 
       // Save to MongoDB
-      await axios.post("http://localhost:3000/save-user", {
-        uid: firebaseUser.uid,
-        name: data.name,
-        email: data.email,
-        photo: imgURL,
-      });
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/save-user",
+        {
+          uid: firebaseUser.uid,
+          name: data.name,
+          email: data.email,
+          photo: imgURL,
+        }
+      );
 
       // Generate JWT token
       const tokenRes = await axios.post(
-        "http://localhost:3000/generate-token",
+        "https://assignment-11-server-five-flax.vercel.app/generate-token",
         {
           email: data.email,
         }
@@ -101,16 +104,19 @@ const Registration = () => {
       const firebaseUser = result.user;
 
       // Save Google user to DB
-      await axios.post("http://localhost:3000/save-user", {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || "Unknown",
-        email: firebaseUser.email,
-        photo: firebaseUser.photoURL || "",
-      });
+      await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/save-user",
+        {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || "Unknown",
+          email: firebaseUser.email,
+          photo: firebaseUser.photoURL || "",
+        }
+      );
 
       // Generate JWT token
       const tokenRes = await axios.post(
-        "http://localhost:3000/generate-token",
+        "https://assignment-11-server-five-flax.vercel.app/generate-token",
         {
           email: firebaseUser.email,
         }

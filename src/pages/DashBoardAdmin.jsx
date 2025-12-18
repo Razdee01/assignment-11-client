@@ -13,7 +13,9 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
-      const res = await axios.get("http://localhost:3000/admin/users");
+      const res = await axios.get(
+        "http://assignment-11-server-five-flax.vercel.app/admin/users"
+      );
       setUsers(res.data);
     } catch (err) {
       console.error(err);
@@ -27,7 +29,9 @@ const AdminDashboard = () => {
   const fetchContests = async () => {
     try {
       setLoadingContests(true);
-      const res = await axios.get("http://localhost:3000/admin/contests");
+      const res = await axios.get(
+        "http://assignment-11-server-five-flax.vercel.app/admin/contests"
+      );
       setContests(res.data);
     } catch (err) {
       console.error(err);
@@ -58,9 +62,12 @@ const AdminDashboard = () => {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.patch(`http://localhost:3000/admin/users/${userId}/role`, {
-        role: newRole,
-      });
+      await axios.patch(
+        `http://assignment-11-server-five-flax.vercel.app/admin/users/${userId}/role`,
+        {
+          role: newRole,
+        }
+      );
       Swal.fire("Success!", `Role updated to ${newRole}`, "success");
       fetchUsers();
     } catch (err) {
@@ -73,7 +80,7 @@ const AdminDashboard = () => {
   const handleContestStatus = async (contestId, status) => {
     try {
       await axios.patch(
-        `http://localhost:3000/admin/contests/${contestId}/status`,
+        `http://assignment-11-server-five-flax.vercel.app/admin/contests/${contestId}/status`,
         { status }
       );
       Swal.fire("Success!", `Contest ${status.toLowerCase()}`, "success");
@@ -97,7 +104,9 @@ const AdminDashboard = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:3000/admin/contests/${contestId}`);
+      await axios.delete(
+        `http://assignment-11-server-five-flax.vercel.app/admin/contests/${contestId}`
+      );
       Swal.fire("Deleted!", "Contest removed permanently", "success");
       fetchContests();
     } catch (err) {

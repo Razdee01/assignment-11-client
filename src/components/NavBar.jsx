@@ -155,8 +155,8 @@ const NavBar = () => {
       </div>
 
       {/* Right Side */}
-      
-      <div className="navbar-end">
+
+      <div className="navbar-end ">
         <ThemeToggle />
         {user ? (
           <div className="dropdown dropdown-end">
@@ -195,6 +195,7 @@ const NavBar = () => {
             Login
           </Link>
         )}
+       
       </div>
     </div>
   );

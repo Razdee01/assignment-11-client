@@ -1,4 +1,4 @@
-// components/WinnerSection.jsx
+
 import React from "react";
 
 const winners = [

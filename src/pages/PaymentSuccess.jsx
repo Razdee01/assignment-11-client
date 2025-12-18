@@ -14,7 +14,10 @@ const PaymentSuccess = () => {
     if (!sessionId) return;
 
     axios
-      .post("http://localhost:3000/payment-success", { sessionId })
+      .post(
+        "https://assignment-11-server-five-flax.vercel.app/payment-success",
+        { sessionId }
+      )
       .then(() => {
         Swal.fire({
           icon: "success",

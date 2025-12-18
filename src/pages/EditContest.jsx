@@ -29,7 +29,9 @@ const EditContest = () => {
     const fetchContest = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`http://localhost:3000/contests/${id}`);
+        const res = await axios.get(
+          `https://assignment-11-server-five-flax.vercel.app/contests/${id}`
+        );
         const c = res.data;
 
         setContest(c);
@@ -69,7 +71,10 @@ const EditContest = () => {
         deadline: data.deadline.toISOString(),
       };
 
-      await axios.patch(`http://localhost:3000/api/contests/${id}`, payload);
+      await axios.patch(
+        `https://assignment-11-server-five-flax.vercel.app/api/contests/${id}`,
+        payload
+      );
 
       Swal.fire("Success!", "Contest updated successfully", "success");
       navigate("/dashboard");

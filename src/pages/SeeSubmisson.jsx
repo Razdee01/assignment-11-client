@@ -13,14 +13,16 @@ const SeeSubmissions = () => {
 
   // ================= LOAD CONTEST =================
   const fetchContest = async () => {
-    const res = await axios.get(`http://localhost:3000/contests/${contestId}`);
+    const res = await axios.get(
+      `https://assignment-11-server-five-flax.vercel.app/contests/${contestId}`
+    );
     setContest(res.data);
   };
 
   // ================= LOAD SUBMISSIONS =================
   const fetchSubmissions = async () => {
     const res = await axios.get(
-      `http://localhost:3000/see-submissions/${contestId}`
+      `https://assignment-11-server-five-flax.vercel.app/see-submissions/${contestId}`
     );
     setSubmissions(res.data);
   };
@@ -58,12 +60,15 @@ const SeeSubmissions = () => {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.post("http://localhost:3000/api/contests/declare-winner", {
-        contestId,
-        winnerName: submission.userName || "Unknown",
-        winnerEmail: submission.userEmail,
-        winnerPhoto: submission.userPhoto || "",
-      });
+      await axios.post(
+        "http://assignment-11-server-five-flax.vercel.app/api/contests/declare-winner",
+        {
+          contestId,
+          winnerName: submission.userName || "Unknown",
+          winnerEmail: submission.userEmail,
+          winnerPhoto: submission.userPhoto || "",
+        }
+      );
 
       Swal.fire("Winner Declared 🏆", "", "success");
       fetchContest(); // refresh winner state

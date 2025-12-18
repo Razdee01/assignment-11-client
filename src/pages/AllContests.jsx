@@ -20,7 +20,7 @@ const AllContests = () => {
     queryKey: ["all-contests", searchQuery],
     queryFn: async () => {
       const res = await axios.get(
-        `http://localhost:3000/all-contests?search=${encodeURIComponent(
+        `https://assignment-11-server-five-flax.vercel.app/all-contests?search=${encodeURIComponent(
           searchQuery
         )}`
       );
