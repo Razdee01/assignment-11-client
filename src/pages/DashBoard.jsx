@@ -101,8 +101,6 @@ export default function Dashboard() {
       );
 
       Swal.fire("Deleted!", "Contest removed permanently", "success");
-
-      // Refresh list
       fetchMyContests();
     } catch (err) {
       console.error(err);
@@ -112,21 +110,21 @@ export default function Dashboard() {
   if (loading) return <Loading />;
 
   return (
-    <div className="container mx-auto p-6 space-y-12">
+    <div className="container mx-auto p-4 md:p-6 space-y-12">
       <div className="text-center">
-        <h1 className="text-4xl font-bold">Creator Dashboard</h1>
+        <h1 className="text-3xl md:text-4xl font-bold">Creator Dashboard</h1>
         <p className="text-gray-600">
           Welcome, {user?.displayName || user?.email}
         </p>
       </div>
 
       {/* Add Contest */}
-      <section className="bg-base-200 p-8 rounded-xl">
+      <section className="bg-base-200 p-4 md:p-8 rounded-xl">
         <h2 className="text-2xl font-bold mb-6 text-center">Add Contest</h2>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-base-100 p-6 rounded-xl"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-base-100 p-4 md:p-6 rounded-xl"
         >
           <div>
             <label className="label">
@@ -275,7 +273,7 @@ export default function Dashboard() {
           </div>
 
           <div className="md:col-span-2 text-center">
-            <button type="submit" className="btn btn-primary btn-wide">
+            <button className="btn btn-primary btn-wide w-full md:w-auto">
               Create Contest
             </button>
           </div>
@@ -283,10 +281,10 @@ export default function Dashboard() {
       </section>
 
       {/* My Contests */}
-      <section className="bg-base-200 p-8 rounded-xl">
+      <section className="bg-base-200 p-4 md:p-8 rounded-xl overflow-x-auto">
         <h2 className="text-2xl font-bold mb-6 text-center">My Contests</h2>
 
-        <table className="table table-zebra w-full">
+        <table className="table table-zebra w-full min-w-[600px]">
           <thead>
             <tr>
               <th>Name</th>
