@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import Swal from "sweetalert2";
 import { AuthContext } from "../contexts/AuthContext";
 import Loading from "../loading/Loading";

@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import Loading from "../loading/Loading";
 
 import { AuthContext } from "../contexts/AuthContext";
 
 const PopularContests = () => {
-
-
   // 1. Fetch API with TanStack Query
   const { data: contests = [], isLoading } = useQuery({
     queryKey: ["popular-contests"],
@@ -17,13 +15,9 @@ const PopularContests = () => {
     },
   });
 
-
-
   if (isLoading) {
     return <Loading />;
   }
-
-
 
   return (
     <div className="w-11/12 mx-auto py-10">
@@ -61,7 +55,6 @@ const PopularContests = () => {
 
             <Link
               to={`contests/${contest._id}`}
-             
               className="mt-4 w-full text-center inline-block px-4 py-2 bg-green-600 text-white rounded-lg"
             >
               View Details

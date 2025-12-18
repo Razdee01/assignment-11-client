@@ -1,7 +1,7 @@
 // src/pages/PaymentSuccess.jsx
 import React, { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import Swal from "sweetalert2";
 
 const PaymentSuccess = () => {

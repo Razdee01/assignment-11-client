@@ -11,7 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/firebase.config";
 import { GoogleAuthProvider } from "firebase/auth";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 
 const AuthProviders = ({ children }) => {
   const [user, setUser] = useState(null);

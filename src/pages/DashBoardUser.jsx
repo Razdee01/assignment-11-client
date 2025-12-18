@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import Swal from "sweetalert2";
 import { AuthContext } from "../contexts/AuthContext";
 import Loading from "../loading/Loading";
@@ -7,7 +7,7 @@ import { updateProfile, reload } from "firebase/auth";
 import { auth } from "../firebase/firebase.config"; // ← make sure this path is correct
 
 const DeshBoardUser = () => {
-  const { user} = useContext(AuthContext); // use setUser to update context
+  const { user } = useContext(AuthContext); // use setUser to update context
 
   const [participatedContests, setParticipatedContests] = useState([]);
   const [winningContests, setWinningContests] = useState([]);

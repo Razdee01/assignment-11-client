@@ -6,7 +6,7 @@ import PopularContests from '../components/PopularContests';
 
 const Home = () => {
     return (
-      <div>
+      <div data-aos="fade-up">
         <HeroBanner></HeroBanner>
         <PopularContests></PopularContests>
         <div className="mt-8 mb-8">

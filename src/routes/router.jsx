@@ -15,6 +15,7 @@ import SeeSubmisson from "../pages/SeeSubmisson";
 import EditContest from "../pages/EditContest";
 import PrivetRoute from "./PrivetRoute";
 import RoleRedirect from "../pages/RoleRedirect";
+import LeaderBoard from "../pages/LeaderBoard";
 // import RoleRedirect from "../components/RoleRedirect"; // ← Import
 
 export const router = createBrowserRouter([
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: "how-it-works", element: <HowItWorks /> },
       { path: "login", element: <Login /> },
       { path: "registration", element: <Registration /> },
+      { path: "leaderboard", element: <LeaderBoard></LeaderBoard> },
 
       // Public pages
       { path: "contests/:id", element: <ContestDetails /> },

@@ -4,7 +4,7 @@ import Swal from "sweetalert2";
 import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../contexts/AuthContext";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import { auth } from "../firebase/firebase.config";
 
 const Registration = () => {
@@ -31,7 +31,7 @@ const Registration = () => {
     }
 
     try {
-      // Create user
+      // Create Firebase user
       await createUser(data.email, data.password);
 
       let imgURL = "";
@@ -60,13 +60,24 @@ const Registration = () => {
         photoURL: imgURL,
       });
 
+      const firebaseUser = auth.currentUser;
+
       // Save to MongoDB
       await axios.post("http://localhost:3000/save-user", {
-        uid: auth.currentUser.uid,
+        uid: firebaseUser.uid,
         name: data.name,
         email: data.email,
         photo: imgURL,
       });
+
+      // Generate JWT token
+      const tokenRes = await axios.post(
+        "http://localhost:3000/generate-token",
+        {
+          email: data.email,
+        }
+      );
+      localStorage.setItem("token", tokenRes.data.token);
 
       Swal.fire({
         icon: "success",
@@ -89,13 +100,22 @@ const Registration = () => {
       const result = await googleSignIn();
       const firebaseUser = result.user;
 
-      // Save Google user to DB (photoURL included!)
+      // Save Google user to DB
       await axios.post("http://localhost:3000/save-user", {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || "Unknown",
         email: firebaseUser.email,
         photo: firebaseUser.photoURL || "",
       });
+
+      // Generate JWT token
+      const tokenRes = await axios.post(
+        "http://localhost:3000/generate-token",
+        {
+          email: firebaseUser.email,
+        }
+      );
+      localStorage.setItem("token", tokenRes.data.token);
 
       Swal.fire({
         icon: "success",

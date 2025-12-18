@@ -1,15 +1,14 @@
-import React, {  useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import Swal from "sweetalert2";
 import { AuthContext } from "../contexts/AuthContext";
 import Loading from "../loading/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 
 const EditContest = () => {
- 
   const { id } = useParams(); // contestId from URL
   const navigate = useNavigate();
 

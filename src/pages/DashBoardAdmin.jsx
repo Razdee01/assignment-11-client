@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 import Swal from "sweetalert2";
 import Loading from "../loading/Loading";
 

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import FullLogo from "../assets/FullLogo.png";
 import { AuthContext } from "../contexts/AuthContext";
 import Swal from "sweetalert2";
+import ThemeToggle from "./ThemeToggle";
 
 const NavBar = () => {
   const navigate = useNavigate();
@@ -87,6 +88,16 @@ const NavBar = () => {
                 How It Works
               </NavLink>
             </li>
+            <li>
+              <NavLink
+                to="/leaderboard"
+                className={({ isActive }) =>
+                  `font-semibold ${isActive ? "text-purple-500" : ""}`
+                }
+              >
+                Leaderboard
+              </NavLink>
+            </li>
           </ul>
         </div>
 
@@ -130,11 +141,23 @@ const NavBar = () => {
               How It Works
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/leaderboard"
+              className={({ isActive }) =>
+                `font-semibold ${isActive ? "text-purple-500" : ""}`
+              }
+            >
+              Leaderboard
+            </NavLink>
+          </li>
         </ul>
       </div>
 
       {/* Right Side */}
+      
       <div className="navbar-end">
+        <ThemeToggle />
         {user ? (
           <div className="dropdown dropdown-end">
             <label tabIndex={0} className="cursor-pointer">

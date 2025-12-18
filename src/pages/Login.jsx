@@ -8,7 +8,7 @@ import {
 import { auth } from "../firebase/firebase.config";
 import Swal from "sweetalert2";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import axios from "axios";
+import axios from "../utilitis/axiosConfig";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -29,14 +29,25 @@ const Login = () => {
         data.email,
         data.password
       );
+      const firebaseUser = result.user;
 
-      // Save/update user in MongoDB
+      // Save user to DB
       await axios.post("http://localhost:3000/save-user", {
-        uid: result.user.uid,
-        name: result.user.displayName || "Unknown",
-        email: result.user.email,
-        photo: result.user.photoURL || "",
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Unknown",
+        email: firebaseUser.email,
+        photo: firebaseUser.photoURL || "",
       });
+
+      // Generate JWT token from backend
+      const tokenRes = await axios.post(
+        "http://localhost:3000/generate-token",
+        {
+          email: firebaseUser.email,
+        }
+      );
+
+      localStorage.setItem("token", tokenRes.data.token);
 
       Swal.fire({ icon: "success", title: "Login Successful!" });
       navigate(location.state || "/");
@@ -52,14 +63,25 @@ const Login = () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
 
-      // Save Google user to DB
+      // Save user to DB
       await axios.post("http://localhost:3000/save-user", {
-        uid: result.user.uid,
-        name: result.user.displayName || "Unknown",
-        email: result.user.email,
-        photo: result.user.photoURL || "",
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Unknown",
+        email: firebaseUser.email,
+        photo: firebaseUser.photoURL || "",
       });
+
+      // Generate JWT token
+      const tokenRes = await axios.post(
+        "http://localhost:3000/generate-token",
+        {
+          email: firebaseUser.email,
+        }
+      );
+
+      localStorage.setItem("token", tokenRes.data.token);
 
       Swal.fire({ icon: "success", title: "Logged in with Google!" });
       navigate(location.state || "/");
