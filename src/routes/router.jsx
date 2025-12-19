@@ -32,7 +32,14 @@ export const router = createBrowserRouter([
       { path: "leaderboard", element: <LeaderBoard></LeaderBoard> },
 
       // Public pages
-      { path: "contests/:id", element: <ContestDetails /> },
+      {
+        path: "contests/:id",
+        element: (
+          <PrivetRoute>
+            <ContestDetails />
+          </PrivetRoute>
+        ),
+      },
       { path: "payment-success", element: <PaymentSuccess /> },
 
       // Main dashboard — redirect by role
