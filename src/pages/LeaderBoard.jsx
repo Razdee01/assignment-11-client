@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "../utilitis/axiosConfig";
 import Loading from "../loading/Loading";
+import { FaCrown, FaTrophy, FaStar } from "react-icons/fa";
 
 const Leaderboard = () => {
   const [leaders, setLeaders] = useState([]);
@@ -14,7 +15,6 @@ const Leaderboard = () => {
         );
         const allContests = res.data;
 
-        // Filter only contests with winner and status Confirmed
         const winningContests = allContests.filter(
           (c) => c.winner && c.winner.email && c.status === "Confirmed"
         );
@@ -24,27 +24,26 @@ const Leaderboard = () => {
           return;
         }
 
-        // Count wins per email
         const winCount = {};
         winningContests.forEach((c) => {
           const email = c.winner.email;
           winCount[email] = (winCount[email] || 0) + 1;
         });
 
-        // Build leaderboard with safe fallback
         const leaderboard = Object.entries(winCount)
           .map(([email, wins]) => {
-            // Find one contest to get name/photo
             const sampleContest = winningContests.find(
               (c) => c.winner?.email === email
             );
             return {
               email,
               name:
-                sampleContest?.winner?.name || email.split("@")[0] || "Unknown",
+                sampleContest?.winner?.name ||
+                email.split("@")[0] ||
+                "Unknown Participant",
               photo:
                 sampleContest?.winner?.photo ||
-                "https://via.placeholder.com/150",
+                "https://i.ibb.co/mR79Y6B/user.png",
               wins,
             };
           })
@@ -62,58 +61,175 @@ const Leaderboard = () => {
 
   if (loading) return <Loading />;
 
-  return (
-    <div data-aos="fade-up" className="container mx-auto p-6">
-      <h1 className="text-4xl font-bold text-center mb-10">Leaderboard 🏆</h1>
+  // Separate top 3 for the podium
+  const topThree = leaders.slice(0, 3);
+  const theRest = leaders.slice(3);
 
-      {leaders.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-3xl font-bold text-gray-500 mb-4">
-            No winners yet!
-          </p>
-          <p className="text-xl text-gray-600">
-            Be the first to win a contest!
+  return (
+    <div
+      className="min-h-screen py-20 transition-all duration-300"
+      style={{
+        backgroundColor: "var(--background-nav)",
+        color: "var(--text-nav)",
+      }}
+    >
+      <div className="max-w-5xl mx-auto px-4">
+        {/* Header */}
+        <div className="text-center mb-16 space-y-4">
+          <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
+            Hall of <span className="text-primary">Fame</span>
+          </h1>
+          <p className="opacity-50 font-bold uppercase tracking-[0.4em] text-[10px]">
+            Elite Competitive Rankings
           </p>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Champion</th>
-                <th>Wins</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaders.map((leader, index) => (
-                <tr key={leader.email} className="hover">
-                  <td className="font-bold text-2xl">
-                    {index === 0 && "🥇 1st"}
-                    {index === 1 && "🥈 2nd"}
-                    {index === 2 && "🥉 3rd"}
-                    {index > 2 && `#${index + 1}`}
-                  </td>
-                  <td className="flex items-center gap-4 py-4">
+
+        {leaders.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed border-base-content/10 rounded-[3rem]">
+            <FaStar className="text-6xl mx-auto opacity-10 mb-4" />
+            <p className="text-2xl font-black uppercase italic opacity-40">
+              No Champions Recorded Yet
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-12">
+            {/* PODIUM SECTION */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end mb-20 px-4">
+              {/* 2nd Place */}
+              {topThree[1] && (
+                <div className="order-2 md:order-1 flex flex-col items-center space-y-4 group">
+                  <div className="relative">
                     <img
-                      src={leader.photo}
-                      alt={leader.name}
-                      className="w-16 h-16 rounded-full object-cover ring-4 ring-primary"
+                      src={topThree[1].photo}
+                      alt=""
+                      className="w-24 h-24 rounded-full object-cover border-4 border-slate-400 p-1 bg-base-content/5 group-hover:scale-110 transition-transform"
                     />
-                    <div>
-                      <p className="font-bold text-lg">{leader.name}</p>
-                      <p className="text-sm text-gray-500">{leader.email}</p>
+                    <div className="absolute -bottom-2 -right-2 bg-slate-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-black italic">
+                      2
                     </div>
-                  </td>
-                  <td className="text-3xl font-bold text-center text-primary">
-                    {leader.wins}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-black uppercase italic text-sm">
+                      {topThree[1].name}
+                    </h3>
+                    <p className="text-primary font-black italic">
+                      {topThree[1].wins} WINS
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 1st Place */}
+              {topThree[0] && (
+                <div className="order-1 md:order-2 flex flex-col items-center space-y-6 group">
+                  <FaCrown className="text-yellow-500 text-4xl animate-bounce" />
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-yellow-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                    <img
+                      src={topThree[0].photo}
+                      alt=""
+                      className="w-32 h-32 rounded-full object-cover border-4 border-yellow-500 p-1 bg-base-content/5 group-hover:scale-110 transition-transform relative z-10"
+                    />
+                    <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black w-10 h-10 rounded-full flex items-center justify-center font-black italic text-xl z-20">
+                      1
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-black uppercase italic text-xl">
+                      {topThree[0].name}
+                    </h3>
+                    <p className="text-primary font-black italic text-2xl">
+                      {topThree[0].wins} WINS
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 3rd Place */}
+              {topThree[2] && (
+                <div className="order-3 flex flex-col items-center space-y-4 group">
+                  <div className="relative">
+                    <img
+                      src={topThree[2].photo}
+                      alt=""
+                      className="w-24 h-24 rounded-full object-cover border-4 border-amber-700 p-1 bg-base-content/5 group-hover:scale-110 transition-transform"
+                    />
+                    <div className="absolute -bottom-2 -right-2 bg-amber-700 text-white w-8 h-8 rounded-full flex items-center justify-center font-black italic">
+                      3
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-black uppercase italic text-sm">
+                      {topThree[2].name}
+                    </h3>
+                    <p className="text-primary font-black italic">
+                      {topThree[2].wins} WINS
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* TABLE SECTION (Rest of the players) */}
+            {theRest.length > 0 && (
+              <div className="overflow-x-auto rounded-[2.5rem] border border-base-content/10 bg-base-content/5 shadow-2xl">
+                <table className="table w-full">
+                  <thead>
+                    <tr
+                      className="border-b border-base-content/10"
+                      style={{ color: "var(--text-nav)" }}
+                    >
+                      <th className="bg-transparent uppercase font-black italic opacity-50">
+                        Rank
+                      </th>
+                      <th className="bg-transparent uppercase font-black italic opacity-50">
+                        Champion
+                      </th>
+                      <th className="bg-transparent uppercase font-black italic opacity-50 text-right">
+                        Wins
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {theRest.map((leader, index) => (
+                      <tr
+                        key={leader.email}
+                        className="border-b border-base-content/5 hover:bg-base-content/5 transition-colors"
+                      >
+                        <td className="font-black italic opacity-30 text-lg">
+                          #{index + 4}
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={leader.photo}
+                              alt=""
+                              className="w-10 h-10 rounded-full object-cover border border-base-content/10"
+                            />
+                            <div>
+                              <p className="font-black uppercase italic text-sm">
+                                {leader.name}
+                              </p>
+                              <p className="text-[10px] opacity-40 font-bold uppercase tracking-widest">
+                                {leader.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="text-right">
+                          <span className="text-xl font-black italic text-primary">
+                            {leader.wins}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

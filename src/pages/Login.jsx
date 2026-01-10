@@ -9,17 +9,26 @@ import { auth } from "../firebase/firebase.config";
 import Swal from "sweetalert2";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import axios from "../utilitis/axiosConfig";
+import { FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa"; // Install react-icons
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm();
+
+  // Quick fill credentials
+  const fillCredentials = (email, password) => {
+    setValue("email", email);
+    setValue("password", password);
+  };
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -31,7 +40,6 @@ const Login = () => {
       );
       const firebaseUser = result.user;
 
-      // Save user to DB
       await axios.post(
         "https://assignment-11-server-five-flax.vercel.app/save-user",
         {
@@ -42,7 +50,6 @@ const Login = () => {
         }
       );
 
-      // Generate JWT token from backend
       const tokenRes = await axios.post(
         "https://assignment-11-server-five-flax.vercel.app/generate-token",
         {
@@ -51,8 +58,12 @@ const Login = () => {
       );
 
       localStorage.setItem("token", tokenRes.data.token);
-
-      Swal.fire({ icon: "success", title: "Login Successful!" });
+      Swal.fire({
+        icon: "success",
+        title: "Login Successful!",
+        background: "var(--background-nav)",
+        color: "var(--text-nav)",
+      });
       navigate(location.state || "/");
     } catch (err) {
       Swal.fire({ icon: "error", title: "Login Failed", text: err.message });
@@ -68,7 +79,6 @@ const Login = () => {
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
 
-      // Save user to DB
       await axios.post(
         "https://assignment-11-server-five-flax.vercel.app/save-user",
         {
@@ -79,7 +89,6 @@ const Login = () => {
         }
       );
 
-      // Generate JWT token
       const tokenRes = await axios.post(
         "https://assignment-11-server-five-flax.vercel.app/generate-token",
         {
@@ -88,7 +97,6 @@ const Login = () => {
       );
 
       localStorage.setItem("token", tokenRes.data.token);
-
       Swal.fire({ icon: "success", title: "Logged in with Google!" });
       navigate(location.state || "/");
     } catch (err) {
@@ -103,98 +111,97 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center py-12 px-4">
-      <div className="card bg-base-100 w-full max-w-lg shadow-2xl">
-        <div className="card-body p-10">
-          <h2 className="card-title text-4xl font-bold text-center mb-10">
-            Login to Your Account
+    <div
+      className="min-h-screen flex items-center justify-center py-12 px-4 transition-all duration-300"
+      style={{
+        backgroundColor: "var(--background-nav)",
+        color: "var(--text-nav)",
+      }}
+    >
+      <div
+        className="w-full max-w-lg rounded-[3rem] shadow-2xl border transition-all duration-300 overflow-hidden"
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.03)",
+          borderColor: "rgba(128, 128, 128, 0.2)",
+        }}
+      >
+        <div className="p-10 md:p-14">
+          <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-center mb-6">
+            Login <span className="text-primary">Now</span>
           </h2>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* DEMO CREDENTIAL BUTTONS */}
+          <div className="flex gap-2 mb-8 justify-center">
+            <button
+              onClick={() => fillCredentials("user@example.com", "123456")}
+              className="btn btn-xs btn-outline rounded-full opacity-70 hover:opacity-100"
+            >
+              Demo User
+            </button>
+            <button
+              onClick={() => fillCredentials("admin@example.com", "admin123")}
+              className="btn btn-xs btn-outline btn-secondary rounded-full opacity-70 hover:opacity-100"
+            >
+              Demo Admin
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="form-control">
               <input
                 type="email"
-                placeholder="Email"
+                placeholder="EMAIL ADDRESS"
                 {...register("email", { required: "Email is required" })}
-                className="input input-lg input-bordered w-full"
+                className="input input-bordered w-full rounded-2xl bg-transparent border-base-content/20 focus:border-primary font-bold"
               />
-              {errors.email && (
-                <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.email.message}
-                  </span>
-                </label>
-              )}
             </div>
 
-            <div className="form-control">
+            <div className="form-control relative">
               <input
-                type="password"
-                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                placeholder="PASSWORD"
                 {...register("password", { required: "Password is required" })}
-                className="input input-lg input-bordered w-full"
+                className="input input-bordered w-full rounded-2xl bg-transparent border-base-content/20 focus:border-primary font-bold pr-12"
               />
-              {errors.password && (
-                <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.password.message}
-                  </span>
-                </label>
-              )}
-            </div>
-
-            <div className="form-control mt-8">
               <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary btn-lg w-full text-xl"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 text-xl"
               >
-                {loading ? "Logging in..." : "Login"}
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary btn-lg w-full rounded-2xl font-black uppercase italic tracking-tighter text-xl h-16 shadow-lg shadow-primary/20"
+            >
+              {loading ? "Authenticating..." : "Login to Hub"}
+            </button>
           </form>
 
-          <div className="divider my-8 text-lg">OR</div>
+          <div className="divider my-8 opacity-20 font-bold text-[10px] tracking-[0.2em]">
+            OR CONTINUE WITH
+          </div>
 
+          {/* HIGH VISIBILITY GOOGLE BUTTON */}
           <button
             onClick={handleGoogle}
             disabled={loading}
-            className="btn btn-outline btn-lg w-full text-lg"
+            className="btn btn-lg w-full rounded-2xl font-black uppercase italic tracking-tighter border-none bg-white text-black hover:bg-gray-200 shadow-xl transition-all active:scale-95"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 512 512"
-              xmlns="http://www.w3.org/2000/svg"
-              className="mr-3"
-            >
-              <path
-                fill="#4285F4"
-                d="M386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"
-              />
-              <path
-                fill="#34A853"
-                d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"
-              />
-              <path
-                fill="#FBBC02"
-                d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"
-              />
-              <path
-                fill="#EA4335"
-                d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"
-              />
-            </svg>
-            {loading ? "Signing in..." : "Continue with Google"}
+            <FaGoogle className="text-2xl mr-3 text-red-500" />
+            Sign in with Google
           </button>
 
-          <p className="text-center mt-8 text-lg">
-            Don’t have an account?{" "}
+          <p className="text-center mt-10 font-bold uppercase tracking-widest text-[10px] opacity-60">
+            Need an account?{" "}
             <Link
               to="/registration"
-              className="link link-primary font-bold text-lg"
+              className="text-primary underline hover:text-secondary"
             >
-              Register
+              Register Now
             </Link>
           </p>
         </div>

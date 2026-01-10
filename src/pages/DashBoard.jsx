@@ -7,6 +7,15 @@ import Swal from "sweetalert2";
 import { AuthContext } from "../contexts/AuthContext";
 import Loading from "../loading/Loading";
 import { useNavigate } from "react-router-dom";
+import {
+  FaPlusCircle,
+  FaLayerGroup,
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaAward,
+  FaCalendarAlt,
+} from "react-icons/fa";
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
@@ -56,14 +65,20 @@ export default function Dashboard() {
         contestType: data.contestType,
         creatorEmail: user.email,
         deadline: data.deadline.toISOString(),
+        status: "Pending", // Explicitly setting default
       };
 
       await axios.post(
         "https://assignment-11-server-five-flax.vercel.app/api/contests",
         payload
       );
-
-      Swal.fire("Success", "Contest created (Pending)", "success");
+      Swal.fire({
+        title: "Launched!",
+        text: "Your contest is now awaiting admin approval.",
+        icon: "success",
+        background: "var(--background-nav)",
+        color: "var(--text-nav)",
+      });
       reset();
       fetchMyContests();
     } catch (err) {
@@ -73,11 +88,7 @@ export default function Dashboard() {
 
   const handleEditContest = (contest) => {
     if (contest.status !== "Pending") {
-      return Swal.fire(
-        "Not Allowed",
-        "Only pending contests can be edited",
-        "info"
-      );
+      return Swal.fire("Locked", "Only pending contests can be edited", "info");
     }
     navigate(`/edit-contest/${contest._id}`);
   };
@@ -85,245 +96,213 @@ export default function Dashboard() {
   const handleDeleteContest = async (contestId) => {
     const result = await Swal.fire({
       title: "Delete Contest?",
-      text: "This action cannot be undone!",
+      text: "This cannot be undone.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete it",
       confirmButtonColor: "#ef4444",
-      cancelButtonText: "Cancel",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       await axios.delete(
         `https://assignment-11-server-five-flax.vercel.app/creator/contests/${contestId}`
       );
-
-      Swal.fire("Deleted!", "Contest removed permanently", "success");
+      Swal.fire("Deleted!", "Contest removed.", "success");
       fetchMyContests();
     } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to delete contest", "error");
+      Swal.fire("Error", "Failed to delete", "error");
     }
   };
+
   if (loading) return <Loading />;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-12">
-      <div className="text-center">
-        <h1 className="text-3xl md:text-4xl font-bold">Creator Dashboard</h1>
-        <p className="text-gray-600">
-          Welcome, {user?.displayName || user?.email}
-        </p>
+    <div
+      className="min-h-screen py-12 px-4 transition-all duration-300"
+      style={{
+        backgroundColor: "var(--background-nav)",
+        color: "var(--text-nav)",
+      }}
+    >
+      <div className="max-w-7xl mx-auto space-y-12">
+        {/* Header */}
+        <header className="text-center">
+          <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
+            Creator <span className="text-primary">Studio</span>
+          </h1>
+          <p className="opacity-50 font-bold uppercase tracking-[0.3em] text-[10px] mt-2">
+            Managing: {user?.displayName || user?.email}
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT: ADD CONTEST FORM */}
+          <section className="lg:col-span-5 p-8 rounded-[2.5rem] bg-base-content/5 border border-base-content/10 shadow-2xl">
+            <h2 className="text-2xl font-black uppercase italic mb-8 flex items-center gap-3">
+              <FaPlusCircle className="text-primary" /> Create New
+            </h2>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="form-control">
+                <input
+                  {...register("name", { required: "Required" })}
+                  className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                  placeholder="Contest Name"
+                />
+                {errors.name && (
+                  <span className="text-error text-[10px] font-bold mt-1 uppercase">
+                    {errors.name.message}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-control">
+                <input
+                  {...register("image", { required: "Required" })}
+                  className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                  placeholder="Banner Image URL"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-control">
+                  <input
+                    type="number"
+                    {...register("price", { required: true, min: 100 })}
+                    className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                    placeholder="Entry Fee (৳)"
+                  />
+                </div>
+                <div className="form-control">
+                  <input
+                    type="number"
+                    {...register("prizeMoney", { required: true })}
+                    className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                    placeholder="Prize (৳)"
+                  />
+                </div>
+              </div>
+
+              <div className="form-control">
+                <select
+                  {...register("contestType", { required: true })}
+                  className="select select-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                >
+                  <option value="" disabled selected>
+                    Contest Category
+                  </option>
+                  <option>Logo Design</option>
+                  <option>Gaming</option>
+                  <option>Article Writing</option>
+                  <option>Business Idea</option>
+                  <option>Photography</option>
+                </select>
+              </div>
+
+              <div className="form-control relative">
+                <FaCalendarAlt className="absolute right-4 top-4 opacity-30" />
+                <DatePicker
+                  selected={deadline}
+                  onChange={(date) => setValue("deadline", date)}
+                  showTimeSelect
+                  className="input input-bordered w-full rounded-xl bg-transparent font-bold border-base-content/10"
+                  placeholderText="Set Deadline"
+                />
+              </div>
+
+              <textarea
+                {...register("description", { required: true })}
+                className="textarea textarea-bordered w-full rounded-xl bg-transparent font-bold border-base-content/10"
+                placeholder="Contest Description"
+                rows="2"
+              />
+
+              <textarea
+                {...register("taskInstruction", { required: true })}
+                className="textarea textarea-bordered w-full rounded-xl bg-transparent font-bold border-base-content/10"
+                placeholder="Submission Instructions"
+                rows="2"
+              />
+
+              <button className="btn btn-primary w-full rounded-xl uppercase font-black italic tracking-widest mt-4">
+                Launch Contest
+              </button>
+            </form>
+          </section>
+
+          {/* RIGHT: LIST OF CONTESTS */}
+          <section className="lg:col-span-7 space-y-6">
+            <h2 className="text-2xl font-black uppercase italic px-4 flex items-center gap-3">
+              <FaLayerGroup className="text-primary" /> My Portfolio
+            </h2>
+
+            <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
+              {myContests.length === 0 ? (
+                <div className="p-20 text-center opacity-20 font-black italic uppercase border-2 border-dashed border-base-content/10 rounded-[2.5rem]">
+                  No Contests Created
+                </div>
+              ) : (
+                myContests.map((c) => (
+                  <div
+                    key={c._id}
+                    className="p-6 rounded-[2rem] bg-base-content/5 border border-base-content/10 flex flex-col md:flex-row justify-between items-center gap-6 group hover:border-primary/50 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center font-black text-primary text-xl italic">
+                        {c.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="font-black uppercase italic tracking-tighter text-lg">
+                          {c.name}
+                        </h3>
+                        <div className="flex gap-3 mt-1">
+                          <span className="text-[10px] font-bold opacity-50 flex items-center gap-1 uppercase">
+                            <FaAward className="text-primary" /> ৳{c.prizeMoney}
+                          </span>
+                          <span
+                            className={`badge badge-xs font-black text-[8px] uppercase italic p-2 ${
+                              c.status === "Confirmed"
+                                ? "badge-success"
+                                : c.status === "Rejected"
+                                ? "badge-error"
+                                : "badge-warning"
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditContest(c)}
+                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-info hover:text-white transition-colors tooltip"
+                        data-tip="Edit"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => navigate(`/see-submissions/${c._id}`)}
+                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-primary hover:text-white transition-colors tooltip"
+                        data-tip="Submissions"
+                      >
+                        <FaEye />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteContest(c._id)}
+                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-error hover:text-white transition-colors tooltip"
+                        data-tip="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
       </div>
-
-      {/* Add Contest */}
-      <section className="bg-base-200 p-4 md:p-8 rounded-xl">
-        <h2 className="text-2xl font-bold mb-6 text-center">Add Contest</h2>
-
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-base-100 p-4 md:p-6 rounded-xl"
-        >
-          <div>
-            <label className="label">
-              <span className="label-text font-semibold">Contest Name</span>
-            </label>
-            <input
-              {...register("name", { required: "Contest name required" })}
-              className="input input-bordered w-full"
-              placeholder="Contest Name"
-            />
-            {errors.name && (
-              <p className="text-error text-sm mt-1">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="label">
-              <span className="label-text font-semibold">Banner Image URL</span>
-            </label>
-            <input
-              {...register("image", {
-                required: "Image URL required",
-                pattern: { value: /^https:\/\//, message: "Must be HTTPS URL" },
-              })}
-              className="input input-bordered w-full"
-              placeholder="https://images.unsplash.com/..."
-            />
-            {errors.image && (
-              <p className="text-error text-sm mt-1">{errors.image.message}</p>
-            )}
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="label">
-              <span className="label-text font-semibold">Description</span>
-            </label>
-            <textarea
-              {...register("description", { required: "Description required" })}
-              className="textarea textarea-bordered w-full"
-              placeholder="Description"
-            />
-            {errors.description && (
-              <p className="text-error text-sm mt-1">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="label">
-              <span className="label-text font-semibold">Entry Fee (৳)</span>
-            </label>
-            <input
-              {...register("price", {
-                required: "Entry fee required",
-                validate: {
-                  isNumber: (v) => !isNaN(v) || "Must be number",
-                  min: (v) => Number(v) >= 100 || "Minimum ৳100",
-                },
-              })}
-              type="number"
-              min="100"
-              className="input input-bordered w-full"
-              placeholder="159"
-            />
-            {errors.price && (
-              <p className="text-error text-sm mt-1">{errors.price.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="label">
-              <span className="label-text font-semibold">Prize Money (৳)</span>
-            </label>
-            <input
-              {...register("prizeMoney", {
-                required: "Prize money required",
-                validate: (v) =>
-                  (!isNaN(v) && v > 0) || "Must be valid number > 0",
-              })}
-              type="number"
-              className="input input-bordered w-full"
-              placeholder="10000"
-            />
-            {errors.prizeMoney && (
-              <p className="text-error text-sm mt-1">
-                {errors.prizeMoney.message}
-              </p>
-            )}
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="label">
-              <span className="label-text font-semibold">Task Instruction</span>
-            </label>
-            <textarea
-              {...register("taskInstruction", {
-                required: "Task instruction required",
-              })}
-              className="textarea textarea-bordered w-full"
-              placeholder="Task Instruction"
-            />
-            {errors.taskInstruction && (
-              <p className="text-error text-sm mt-1">
-                {errors.taskInstruction.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="label">
-              <span className="label-text font-semibold">Contest Type</span>
-            </label>
-            <select
-              {...register("contestType", { required: "Select contest type" })}
-              className="select select-bordered w-full"
-            >
-              <option value="">Select Type</option>
-              <option>Logo Design</option>
-              <option>Gaming</option>
-              <option>Article Writing</option>
-              <option>Business Idea</option>
-              <option>Photography</option>
-            </select>
-            {errors.contestType && (
-              <p className="text-error text-sm mt-1">
-                {errors.contestType.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="label">
-              <span className="label-text font-semibold">Deadline</span>
-            </label>
-            <DatePicker
-              selected={deadline}
-              onChange={(date) => setValue("deadline", date)}
-              showTimeSelect
-              className="input input-bordered w-full"
-              placeholderText="Select deadline"
-            />
-            {!deadline && (
-              <p className="text-error text-sm mt-1">Deadline required</p>
-            )}
-          </div>
-
-          <div className="md:col-span-2 text-center">
-            <button className="btn btn-primary btn-wide w-full md:w-auto">
-              Create Contest
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* My Contests */}
-      <section className="bg-base-200 p-4 md:p-8 rounded-xl overflow-x-auto">
-        <h2 className="text-2xl font-bold mb-6 text-center">My Contests</h2>
-
-        <table className="table table-zebra w-full min-w-[600px]">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Prize</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {myContests.map((c) => (
-              <tr key={c._id}>
-                <td>{c.name}</td>
-                <td>৳{c.prizeMoney}</td>
-                <td>{c.status}</td>
-                <td className="flex gap-2 flex-wrap">
-                  <button
-                    className="btn btn-sm btn-info"
-                    onClick={() => handleEditContest(c)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-error"
-                    onClick={() => handleDeleteContest(c._id)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    className="btn btn-sm btn-success"
-                    onClick={() => navigate(`/see-submissions/${c._id}`)}
-                  >
-                    See Submissions
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
     </div>
   );
 }

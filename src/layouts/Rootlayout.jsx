@@ -12,7 +12,7 @@ const Rootlayout = () => {
         <NavBar />
 
     
-        <main className="grow flex items-center justify-center bg-gray-100">
+        <main className="grow flex items-center justify-center">
           <Outlet /> 
         </main>
 

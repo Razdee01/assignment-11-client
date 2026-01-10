@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "../utilitis/axiosConfig";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Loading from "../loading/Loading";
 import { AuthContext } from "../contexts/AuthContext";
 
 export default function ContestDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
   const [contest, setContest] = useState(null);
@@ -17,10 +18,8 @@ export default function ContestDetails() {
   const [isEnded, setIsEnded] = useState(false);
   const [winnerDeclared, setWinnerDeclared] = useState(false);
 
-  // ================= FETCH CONTEST =================
   useEffect(() => {
     if (!id) return;
-
     const fetchContest = async () => {
       try {
         const { data } = await axios.get(
@@ -32,253 +31,144 @@ export default function ContestDetails() {
         setWinnerDeclared(!!data.winner?.name);
         setIsLoading(false);
       } catch (err) {
-        console.error(err);
-        Swal.fire("Error", "Could not load contest", "error");
         setIsLoading(false);
       }
     };
-
     fetchContest();
   }, [id]);
 
-  // ================= CHECK REGISTRATION =================
   useEffect(() => {
     if (!id || !user?.email) return;
-
     axios
       .get(
-        "https://assignment-11-server-five-flax.vercel.app/registrations/check",
-        {
-          params: { contestId: id, email: user.email },
-        }
+        `https://assignment-11-server-five-flax.vercel.app/registrations/check`,
+        { params: { contestId: id, email: user.email } }
       )
-      .then((res) => setIsRegistered(res.data.registered))
-      .catch(console.error);
-  }, [id, user?.email]);
-
-  // ================= CHECK SUBMISSION =================
-  useEffect(() => {
-    if (!id || !user?.email) return;
-
+      .then((res) => setIsRegistered(res.data.registered));
     axios
       .get(
-        "https://assignment-11-server-five-flax.vercel.app/submissions/check",
-        {
-          params: { contestId: id, email: user.email },
-        }
+        `https://assignment-11-server-five-flax.vercel.app/submissions/check`,
+        { params: { contestId: id, email: user.email } }
       )
-      .then((res) => setHasSubmitted(res.data.submitted))
-      .catch(console.error);
+      .then((res) => setHasSubmitted(res.data.submitted));
   }, [id, user?.email]);
 
-  // ================= COUNTDOWN TIMER =================
   useEffect(() => {
     if (!contest) return;
-
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const deadline = new Date(contest.deadline).getTime();
       const diff = deadline - now;
-
       if (diff <= 0) {
-        setCountdown("Contest Ended");
+        setCountdown("Ended");
         setIsEnded(true);
         clearInterval(interval);
         return;
       }
-
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
       const seconds = Math.floor((diff / 1000) % 60);
-
       setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
     }, 1000);
-
     return () => clearInterval(interval);
   }, [contest]);
-
-  // ================= HANDLE PAYMENT =================
-  const handlePayment = async () => {
-    if (isEnded || isRegistered || winnerDeclared) {
-      return Swal.fire(
-        "Can't register",
-        "Contest ended or already registered",
-        "info"
-      );
-    }
-
-    try {
-      const paymentData = {
-        contestId: contest._id,
-        contestName: contest.name,
-        amount: Number(contest.entryFee) || 100, // force number
-        bannerImage:
-          contest.bannerImage || "https://via.placeholder.com/800x400",
-        description: contest.description || "Contest entry",
-        userId: user.uid,
-        userName: user.displayName || "User",
-        userEmail: user.email,
-        userPhoto: user.photoURL || "",
-      };
-
-      console.log("Sending payment data:", paymentData); // ← ADD THIS
-
-      const { data } = await axios.post(
-        "https://assignment-11-server-five-flax.vercel.app/create-checkout-session",
-        paymentData
-      );
-
-      window.location.href = data.url;
-    } catch (err) {
-      console.error("Payment error:", err.response?.data || err);
-      Swal.fire(
-        "Payment Failed",
-        err.response?.data?.message || "Try again",
-        "error"
-      );
-    }
-  };
-
-  // ================= HANDLE TASK SUBMIT =================
-  const handleTaskSubmit = async () => {
-    if (isEnded)
-      return Swal.fire(
-        "Error",
-        "Contest has ended, submissions closed",
-        "error"
-      );
-    if (winnerDeclared)
-      return Swal.fire("Info", "Winner already declared", "info");
-    if (!isRegistered)
-      return Swal.fire("Error", "You are not registered", "error");
-
-    const { value: taskLink } = await Swal.fire({
-      title: "Submit Your Task",
-      input: "textarea",
-      inputPlaceholder: "Paste your submission link",
-      showCancelButton: true,
-    });
-
-    if (!taskLink) return;
-
-    try {
-      await axios.post(
-        "https://assignment-11-server-five-flax.vercel.app/submit-task",
-        {
-          contestId: id,
-          userEmail: user.email,
-          taskLink,
-        }
-      );
-
-      setHasSubmitted(true);
-      Swal.fire("Success!", "Task submitted successfully!", "success");
-    } catch (err) {
-      console.error(err);
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Submission failed",
-        "error"
-      );
-    }
-  };
 
   if (isLoading) return <Loading />;
 
   return (
-    <div className="w-11/12 mx-auto py-10">
-      {/* Banner */}
-      <img
-        src={contest.bannerImage}
-        alt={contest.name}
-        className="w-full h-72 object-cover rounded-xl shadow"
-      />
-
-      {/* Title */}
-      <h1 className="text-4xl font-bold mt-6">{contest.name}</h1>
-
-      {/* Countdown */}
-      <p
-        className={`text-xl font-semibold mt-2 ${
-          isEnded ? "text-red-600" : "text-green-600"
-        }`}
-      >
-        {isEnded ? "Contest Ended" : `⏳ Time Left: ${countdown}`}
-      </p>
-
-      {/* Stats */}
-      <div className="mt-4 text-lg">
-        <p>
-          <strong>Participants:</strong> {contest.participants}
-        </p>
-        <p>
-          <strong>Prize:</strong> {contest.prizeMoney} BDT
-        </p>
-      </div>
-
-      {/* Description */}
-      <div className="mt-6 bg-gray-100 p-5 rounded-lg">
-        <h2 className="text-2xl font-bold mb-2">Description</h2>
-        <p>{contest.description}</p>
-      </div>
-
-      {/* Task Details */}
-      <div className="mt-6 bg-gray-100 p-5 rounded-lg">
-        <h2 className="text-2xl font-bold mb-2">Task Details</h2>
-        <p>{contest.taskDetails}</p>
-      </div>
-
-      {/* Winner */}
-      <div className="mt-8 p-5 bg-white rounded-xl shadow">
-        <h2 className="text-2xl font-bold mb-4">Winner</h2>
-        {contest.winner?.name ? (
-          <div className="flex items-center gap-4">
-            <img
-              src={contest.winner.photo}
-              alt="winner"
-              className="w-20 h-20 rounded-full object-cover border"
-            />
-            <p className="text-xl font-semibold">{contest.winner.name}</p>
+    <div 
+      className="min-h-screen py-10 transition-colors duration-300"
+      /* This ensures the page background matches your dark nav */
+      style={{ backgroundColor: "var(--background-nav)", color: "var(--text-nav)" }}
+    >
+      <div className="max-w-6xl mx-auto px-4">
+        
+        {/* Header Section */}
+        <div className="mb-10 text-center md:text-left">
+          <h1 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter" style={{ color: "var(--text-nav)" }}>
+            {contest.name}
+          </h1>
+          <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
+            <span className="badge badge-primary badge-lg font-bold">{contest.contentType}</span>
+            <span className={`text-xl font-bold italic ${isEnded ? 'text-error' : 'text-success'}`}>
+              {isEnded ? "● Contest Ended" : `⏳ ${countdown}`}
+            </span>
           </div>
-        ) : (
-          <p className="text-gray-500 italic">Winner not declared yet.</p>
-        )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-8">
+            <img 
+              src={contest.bannerImage} 
+              className="w-full h-96 object-cover rounded-[3rem] shadow-2xl border-4" 
+              style={{ borderColor: "rgba(128,128,128,0.2)" }}
+              alt="banner"
+            />
+            
+            {/* FIXED THE WHITE BOX HERE */}
+            <div 
+              className="p-10 rounded-[3rem] shadow-sm border"
+              style={{ 
+                backgroundColor: "var(--background-nav)", // Matches Nav Background
+                color: "var(--text-nav)",                // Matches Nav Text
+                borderColor: "rgba(128, 128, 128, 0.2)"  // Subtle border
+              }}
+            >
+              <h2 className="text-2xl font-black uppercase mb-4 text-primary">Description</h2>
+              <p className="text-lg opacity-80 leading-relaxed">{contest.description}</p>
+              
+              <h2 className="text-2xl font-black uppercase mt-10 mb-4 text-primary">Task Details</h2>
+              <p className="text-lg opacity-80 leading-relaxed">{contest.taskDetails}</p>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            <div className="stats stats-vertical shadow-xl bg-primary text-primary-content w-full rounded-[2.5rem]">
+              <div className="stat p-8">
+                <div className="stat-title text-primary-content opacity-70 font-bold uppercase">Entry Fee</div>
+                <div className="stat-value text-5xl font-black italic">{contest.entryFee} BDT</div>
+              </div>
+              <div className="stat p-8 border-t border-primary-content/20">
+                <div className="stat-title text-primary-content opacity-70 font-bold uppercase">Prize Pool</div>
+                <div className="stat-value text-5xl font-black italic">{contest.prizeMoney} BDT</div>
+              </div>
+            </div>
+
+            {/* FIXED THE PARTICIPANTS BOX HERE */}
+            <div 
+              className="p-8 rounded-[2.5rem] text-center border shadow-lg"
+              style={{ 
+                backgroundColor: "var(--background-nav)", 
+                borderColor: "rgba(128, 128, 128, 0.2)" 
+              }}
+            >
+               <p className="text-sm font-bold opacity-50 uppercase mb-1">Current Participants</p>
+               <p className="text-4xl font-black">{contest.participants}</p>
+            </div>
+
+            <div className="flex flex-col gap-4 pt-4">
+              <button
+                disabled={isEnded || isRegistered || winnerDeclared}
+                className="btn btn-primary btn-lg rounded-2xl font-black uppercase italic h-20 text-xl"
+              >
+                {isRegistered ? "Registered" : "Register Now"}
+              </button>
+              
+              {isRegistered && (
+                <button
+                  disabled={hasSubmitted || isEnded}
+                  className="btn btn-secondary btn-lg rounded-2xl font-black uppercase italic h-20 text-xl"
+                >
+                  {hasSubmitted ? "Submitted" : "Submit Task"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Register Button */}
-      <button
-        disabled={isEnded || isRegistered || winnerDeclared}
-        onClick={handlePayment}
-        className={`w-full mt-6 py-3 text-white rounded-xl text-lg font-semibold ${
-          isEnded || isRegistered || winnerDeclared
-            ? "bg-gray-400"
-            : "bg-blue-600 hover:bg-blue-700"
-        }`}
-      >
-        {isRegistered
-          ? "Registered"
-          : winnerDeclared
-          ? "Winner Declared"
-          : "Register"}
-      </button>
-
-      {/* Submit Task Button */}
-      <button
-        disabled={isEnded || !isRegistered || hasSubmitted || winnerDeclared}
-        onClick={handleTaskSubmit}
-        className={`w-full mt-4 py-3 text-white rounded-xl text-lg font-semibold ${
-          isEnded || !isRegistered || hasSubmitted || winnerDeclared
-            ? "bg-gray-400"
-            : "bg-green-600 hover:bg-green-700"
-        }`}
-      >
-        {hasSubmitted
-          ? "Already Submitted"
-          : winnerDeclared
-          ? "Winner Declared"
-          : "Submit Task"}
-      </button>
     </div>
-  );
-}
+  );}
