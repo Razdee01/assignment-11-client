@@ -1,0 +1,25 @@
+/* Custom Nav Link Effects */
+.custom-nav-link {
+  position: relative;
+  font-family: 'Inter', sans-serif; /* or your bold font */
+  letter-spacing: 0.05em;
+}
+
+.active-link {
+  color: #007BFF !important; /* Your Primary Blue */
+  font-style: italic;
+  font-weight: 900 !important;
+  text-shadow: 0 0 10px rgba(0, 123, 255, 0.4);
+}
+
+.active-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background-color: #007BFF;
+  box-shadow: 0 0 10px #007BFF;
+  border-radius: 2px;
+}

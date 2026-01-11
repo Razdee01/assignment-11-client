@@ -16,6 +16,9 @@ import EditContest from "../pages/EditContest";
 import PrivetRoute from "./PrivetRoute";
 import RoleRedirect from "../pages/RoleRedirect";
 import LeaderBoard from "../pages/LeaderBoard";
+import About from "../pages/About";
+import Contact from "../pages/Contact";
+import Privacy from "../pages/Privacy";
 // import RoleRedirect from "../components/RoleRedirect"; // ← Import
 
 export const router = createBrowserRouter([
@@ -26,18 +29,27 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "all-contests", element: <AllContests /> },
-      { path: "how-it-works", element: <HowItWorks /> },
+      // { path: "how-it-works", element: <HowItWorks /> },
       { path: "login", element: <Login /> },
       { path: "registration", element: <Registration /> },
       { path: "leaderboard", element: <LeaderBoard></LeaderBoard> },
+ 
+ 
+  
+{ path:"/about", element:<About /> },
+{ path:"/contact", element:<Contact /> },
+{ path:"/privacy", element:<Privacy /> },
+  // {path:"/help", element:<Help /> },
+  
+  
 
       // Public pages
       {
         path: "contests/:id",
         element: (
-          <PrivetRoute>
+          
             <ContestDetails />
-          </PrivetRoute>
+          
         ),
       },
       { path: "payment-success", element: <PaymentSuccess /> },

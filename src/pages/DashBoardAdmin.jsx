@@ -3,6 +3,16 @@ import axios from "../utilitis/axiosConfig";
 import Swal from "sweetalert2";
 import Loading from "../loading/Loading";
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  CartesianGrid,
+} from "recharts";
+import {
   FaUsersCog,
   FaTrophy,
   FaTrashAlt,
@@ -11,6 +21,7 @@ import {
   FaUserShield,
   FaUserEdit,
   FaUser,
+  FaChartBar,
 } from "react-icons/fa";
 
 const AdminDashboard = () => {
@@ -18,6 +29,23 @@ const AdminDashboard = () => {
   const [contests, setContests] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingContests, setLoadingContests] = useState(true);
+
+  // 1. Data Processing for Chart
+  const prepareChartData = () => {
+    const roleCounts = users.reduce((acc, user) => {
+      const role = user.role || "User";
+      acc[role] = (acc[role] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.keys(roleCounts).map((role) => ({
+      name: role,
+      count: roleCounts[role],
+    }));
+  };
+
+  const chartData = prepareChartData();
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
 
   // Fetch Users
   const fetchUsers = async () => {
@@ -140,27 +168,81 @@ const AdminDashboard = () => {
           </p>
         </div>
 
-        {/* STATS OVERVIEW */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-8 rounded-[2rem] bg-base-content/5 border border-base-content/10 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase opacity-40">
-                Registered Users
-              </p>
-              <h3 className="text-4xl font-black italic">{users.length}</h3>
+        {/* STATS & CHART SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* STATS CARDS */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="p-8 rounded-[2rem] bg-base-content/5 border border-base-content/10 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase opacity-40">
+                  Registered Users
+                </p>
+                <h3 className="text-4xl font-black italic">{users.length}</h3>
+              </div>
+              <FaUsersCog className="text-5xl opacity-10" />
             </div>
-            <FaUsersCog className="text-5xl opacity-10" />
+            <div className="p-8 rounded-[2rem] bg-base-content/5 border border-base-content/10 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase opacity-40">
+                  Total Contests
+                </p>
+                <h3 className="text-4xl font-black italic text-primary">
+                  {contests.length}
+                </h3>
+              </div>
+              <FaTrophy className="text-5xl opacity-10" />
+            </div>
           </div>
-          <div className="p-8 rounded-[2rem] bg-base-content/5 border border-base-content/10 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase opacity-40">
-                Total Contests
-              </p>
-              <h3 className="text-4xl font-black italic text-primary">
-                {contests.length}
-              </h3>
+
+          {/* CHART CARD */}
+          <div className="lg:col-span-2 p-8 rounded-[2rem] bg-base-content/5 border border-base-content/10 min-h-[300px]">
+            <div className="flex items-center gap-3 mb-6">
+              <FaChartBar className="text-primary" />
+              <h2 className="text-sm font-black uppercase italic">
+                User Distribution By Role
+              </h2>
             </div>
-            <FaTrophy className="text-5xl opacity-10" />
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="currentColor"
+                    opacity={0.1}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "currentColor",
+                      fontSize: 12,
+                      fontWeight: "bold",
+                    }}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    cursor={{ fill: "transparent" }}
+                    contentStyle={{
+                      backgroundColor: "#1a1a1a",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[10, 10, 0, 0]} barSize={50}>
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -180,7 +262,7 @@ const AdminDashboard = () => {
                   className="border-b border-base-content/10"
                   style={{ color: "var(--text-nav)" }}
                 >
-                  <th className="bg-transparent uppercase font-black italic">
+                  <th className="bg-transparent uppercase font-black italic text-left">
                     Identity
                   </th>
                   <th className="bg-transparent uppercase font-black italic text-center">
@@ -197,7 +279,7 @@ const AdminDashboard = () => {
                     key={u._id}
                     className="border-b border-base-content/5 hover:bg-base-content/5"
                   >
-                    <td>
+                    <td className="text-left">
                       <p className="font-black uppercase italic">
                         {u.name || "Anonymous"}
                       </p>
@@ -266,7 +348,7 @@ const AdminDashboard = () => {
                   className="border-b border-base-content/10"
                   style={{ color: "var(--text-nav)" }}
                 >
-                  <th className="bg-transparent uppercase font-black italic">
+                  <th className="bg-transparent uppercase font-black italic text-left">
                     Contest Details
                   </th>
                   <th className="bg-transparent uppercase font-black italic text-center">
@@ -283,7 +365,7 @@ const AdminDashboard = () => {
                     key={c._id}
                     className="border-b border-base-content/5 hover:bg-base-content/5"
                   >
-                    <td>
+                    <td className="text-left">
                       <p className="font-black uppercase italic tracking-tighter">
                         {c.name}
                       </p>

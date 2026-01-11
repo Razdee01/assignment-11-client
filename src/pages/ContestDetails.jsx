@@ -18,6 +18,74 @@ export default function ContestDetails() {
   const [isEnded, setIsEnded] = useState(false);
   const [winnerDeclared, setWinnerDeclared] = useState(false);
 
+  // 1. REGISTRATION (STRIPE)
+  const handleRegister = async () => {
+    if (!user) {
+      Swal.fire("Please Login", "You must be logged in to register", "warning");
+      return navigate("/login");
+    }
+
+    try {
+      const response = await axios.post(
+        "https://assignment-11-server-five-flax.vercel.app/create-checkout-session",
+        {
+          contestId: id,
+          userEmail: user.email,
+          userName: user.displayName,
+          amount: contest.entryFee,
+          contestName: contest.name,
+          description: contest.description,
+          bannerImage: contest.bannerImage,
+          userId: user.uid || "",
+          userPhoto: user.photoURL || "",
+        }
+      );
+
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (err) {
+      console.error("Stripe Checkout Error:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Payment initiation failed",
+        "error"
+      );
+    }
+  };
+
+  // 2. SUBMISSION HANDLER
+  const handleSubmitTask = async () => {
+    const { value: submissionLink } = await Swal.fire({
+      title: "Submit Your Work",
+      input: "url",
+      inputLabel: "Provide your Project/Submission Link",
+      inputPlaceholder: "https://github.com/...",
+      showCancelButton: true,
+      confirmButtonColor: "#10B981",
+    });
+
+    if (submissionLink) {
+      try {
+        await axios.post(
+          `https://assignment-11-server-five-flax.vercel.app/submissions`,
+          {
+            contestId: id,
+            participantEmail: user.email,
+            participantName: user.displayName,
+            submissionLink: submissionLink,
+            submittedAt: new Date(),
+          }
+        );
+        setHasSubmitted(true);
+        Swal.fire("Success", "Task submitted successfully!", "success");
+      } catch (err) {
+        Swal.fire("Error", "Could not submit task. Try again.", "error");
+      }
+    }
+  };
+
+  // 3. FETCH CONTEST DATA
   useEffect(() => {
     if (!id) return;
     const fetchContest = async () => {
@@ -37,24 +105,38 @@ export default function ContestDetails() {
     fetchContest();
   }, [id]);
 
+  // 4. CHECK STATUS (Registered & Submitted)
+  // FIXED: Added better dependency tracking to ensure buttons show up immediately
   useEffect(() => {
     if (!id || !user?.email) return;
-    axios
-      .get(
-        `https://assignment-11-server-five-flax.vercel.app/registrations/check`,
-        { params: { contestId: id, email: user.email } }
-      )
-      .then((res) => setIsRegistered(res.data.registered));
-    axios
-      .get(
-        `https://assignment-11-server-five-flax.vercel.app/submissions/check`,
-        { params: { contestId: id, email: user.email } }
-      )
-      .then((res) => setHasSubmitted(res.data.submitted));
+
+    const checkStatus = async () => {
+      try {
+        const regRes = await axios.get(
+          `https://assignment-11-server-five-flax.vercel.app/registrations/check`,
+          { params: { contestId: id, email: user.email } }
+        );
+        setIsRegistered(regRes.data.registered);
+
+        // Only check submission if they are actually registered
+        if (regRes.data.registered) {
+          const subRes = await axios.get(
+            `https://assignment-11-server-five-flax.vercel.app/submissions/check`,
+            { params: { contestId: id, email: user.email } }
+          );
+          setHasSubmitted(subRes.data.submitted);
+        }
+      } catch (error) {
+        console.error("Status check failed", error);
+      }
+    };
+
+    checkStatus();
   }, [id, user?.email]);
 
+  // 5. COUNTDOWN TIMER
   useEffect(() => {
-    if (!contest) return;
+    if (!contest || isEnded) return;
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const deadline = new Date(contest.deadline).getTime();
@@ -72,103 +154,146 @@ export default function ContestDetails() {
       setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
     }, 1000);
     return () => clearInterval(interval);
-  }, [contest]);
+  }, [contest, isEnded]);
 
   if (isLoading) return <Loading />;
 
   return (
-    <div 
-      className="min-h-screen py-10 transition-colors duration-300"
-      /* This ensures the page background matches your dark nav */
-      style={{ backgroundColor: "var(--background-nav)", color: "var(--text-nav)" }}
+    <div
+      className="min-h-screen py-10 transition-all duration-300"
+      style={{
+        backgroundColor: "var(--background-nav)",
+        color: "var(--text-nav)",
+      }}
     >
       <div className="max-w-6xl mx-auto px-4">
-        
         {/* Header Section */}
         <div className="mb-10 text-center md:text-left">
-          <h1 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter" style={{ color: "var(--text-nav)" }}>
+          <h1 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter">
             {contest.name}
           </h1>
-          <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
-            <span className="badge badge-primary badge-lg font-bold">{contest.contentType}</span>
-            <span className={`text-xl font-bold italic ${isEnded ? 'text-error' : 'text-success'}`}>
+          <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start items-center">
+            <span className="badge badge-primary badge-lg font-black uppercase py-4 px-6">
+              {contest.contentType}
+            </span>
+            <span
+              className={`text-xl font-black italic ${
+                isEnded ? "text-error" : "text-success"
+              }`}
+            >
               {isEnded ? "● Contest Ended" : `⏳ ${countdown}`}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          
-          {/* Left Column */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            <img 
-              src={contest.bannerImage} 
-              className="w-full h-96 object-cover rounded-[3rem] shadow-2xl border-4" 
-              style={{ borderColor: "rgba(128,128,128,0.2)" }}
-              alt="banner"
-            />
-            
-            {/* FIXED THE WHITE BOX HERE */}
-            <div 
-              className="p-10 rounded-[3rem] shadow-sm border"
-              style={{ 
-                backgroundColor: "var(--background-nav)", // Matches Nav Background
-                color: "var(--text-nav)",                // Matches Nav Text
-                borderColor: "rgba(128, 128, 128, 0.2)"  // Subtle border
-              }}
-            >
-              <h2 className="text-2xl font-black uppercase mb-4 text-primary">Description</h2>
-              <p className="text-lg opacity-80 leading-relaxed">{contest.description}</p>
-              
-              <h2 className="text-2xl font-black uppercase mt-10 mb-4 text-primary">Task Details</h2>
-              <p className="text-lg opacity-80 leading-relaxed">{contest.taskDetails}</p>
+            <div className="relative group">
+              <img
+                src={contest.bannerImage}
+                className="w-full h-96 object-cover rounded-[3rem] shadow-2xl border-4 border-base-content/10 transition-transform duration-500 group-hover:scale-[1.01]"
+                alt="banner"
+              />
+              {isEnded && (
+                <div className="absolute inset-0 bg-black/60 rounded-[3rem] flex items-center justify-center">
+                  <h2 className="text-white text-5xl font-black uppercase italic border-4 border-white p-4">
+                    Closed
+                  </h2>
+                </div>
+              )}
+            </div>
+
+            <div className="p-10 rounded-[3rem] shadow-sm border border-base-content/10 bg-base-content/5">
+              <h2 className="text-2xl font-black uppercase mb-4 text-primary italic">
+                Description
+              </h2>
+              <p className="text-lg opacity-80 leading-relaxed mb-10">
+                {contest.description}
+              </p>
+
+              <h2 className="text-2xl font-black uppercase mb-4 text-primary italic">
+                Task Details
+              </h2>
+              <div className="bg-base-100/50 p-6 rounded-2xl border border-dashed border-primary/30">
+                <p className="text-lg opacity-90 leading-relaxed">
+                  {contest.taskDetails}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            <div className="stats stats-vertical shadow-xl bg-primary text-primary-content w-full rounded-[2.5rem]">
+            <div className="stats stats-vertical shadow-2xl bg-primary text-primary-content w-full rounded-[2.5rem] overflow-hidden">
               <div className="stat p-8">
-                <div className="stat-title text-primary-content opacity-70 font-bold uppercase">Entry Fee</div>
-                <div className="stat-value text-5xl font-black italic">{contest.entryFee} BDT</div>
+                <div className="stat-title text-primary-content/70 font-bold uppercase text-xs">
+                  Entry Fee
+                </div>
+                <div className="stat-value text-5xl font-black italic">
+                  ৳{contest.entryFee}
+                </div>
               </div>
-              <div className="stat p-8 border-t border-primary-content/20">
-                <div className="stat-title text-primary-content opacity-70 font-bold uppercase">Prize Pool</div>
-                <div className="stat-value text-5xl font-black italic">{contest.prizeMoney} BDT</div>
+              <div className="stat p-8 border-t border-primary-content/10 bg-black/10">
+                <div className="stat-title text-primary-content/70 font-bold uppercase text-xs">
+                  Prize Pool
+                </div>
+                <div className="stat-value text-5xl font-black italic text-warning">
+                  ৳{contest.prizeMoney}
+                </div>
               </div>
             </div>
 
-            {/* FIXED THE PARTICIPANTS BOX HERE */}
-            <div 
-              className="p-8 rounded-[2.5rem] text-center border shadow-lg"
-              style={{ 
-                backgroundColor: "var(--background-nav)", 
-                borderColor: "rgba(128, 128, 128, 0.2)" 
-              }}
-            >
-               <p className="text-sm font-bold opacity-50 uppercase mb-1">Current Participants</p>
-               <p className="text-4xl font-black">{contest.participants}</p>
+            <div className="p-8 rounded-[2.5rem] text-center border border-base-content/10 bg-base-content/5 shadow-lg">
+              <p className="text-xs font-bold opacity-50 uppercase mb-1">
+                Current Participants
+              </p>
+              <p className="text-4xl font-black">{contest.participants || 0}</p>
             </div>
 
+            {/* Action Buttons */}
             <div className="flex flex-col gap-4 pt-4">
-              <button
-                disabled={isEnded || isRegistered || winnerDeclared}
-                className="btn btn-primary btn-lg rounded-2xl font-black uppercase italic h-20 text-xl"
-              >
-                {isRegistered ? "Registered" : "Register Now"}
-              </button>
-              
+              {/* REGISTER BUTTON: Only show if NOT registered */}
+              {!isRegistered ? (
+                <button
+                  onClick={handleRegister}
+                  disabled={isEnded || winnerDeclared}
+                  className="btn btn-primary btn-lg rounded-2xl font-black uppercase italic h-20 text-xl shadow-lg transition-all hover:scale-105"
+                >
+                  {isEnded ? "Registration Closed" : "Register Now"}
+                </button>
+              ) : (
+                <div className="alert alert-success rounded-2xl font-bold italic shadow-md">
+                  <span>✓ You are Registered</span>
+                </div>
+              )}
+
+              {/* SUBMIT BUTTON: Only show if REGISTERED */}
               {isRegistered && (
                 <button
+                  onClick={handleSubmitTask}
                   disabled={hasSubmitted || isEnded}
-                  className="btn btn-secondary btn-lg rounded-2xl font-black uppercase italic h-20 text-xl"
+                  className={`btn btn-lg rounded-2xl font-black uppercase italic h-20 text-xl shadow-lg transition-all hover:scale-105 ${
+                    hasSubmitted
+                      ? "btn-ghost border-2 border-success"
+                      : "btn-secondary"
+                  }`}
                 >
-                  {hasSubmitted ? "Submitted" : "Submit Task"}
+                  {hasSubmitted ? "✓ Task Submitted" : "Submit Task"}
                 </button>
+              )}
+
+              {winnerDeclared && (
+                <div className="p-6 bg-warning/20 border-2 border-warning rounded-2xl text-center animate-pulse">
+                  <p className="font-black italic text-warning uppercase text-xl">
+                    🏆 Winner Declared
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
     </div>
-  );}
+  );
+}

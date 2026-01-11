@@ -8,6 +8,14 @@ import { AuthContext } from "../contexts/AuthContext";
 import Loading from "../loading/Loading";
 import { useNavigate } from "react-router-dom";
 import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
+import {
   FaPlusCircle,
   FaLayerGroup,
   FaEdit,
@@ -15,6 +23,7 @@ import {
   FaEye,
   FaAward,
   FaCalendarAlt,
+  FaChartPie,
 } from "react-icons/fa";
 
 export default function Dashboard() {
@@ -33,6 +42,27 @@ export default function Dashboard() {
     formState: { errors },
   } = useForm();
   const deadline = watch("deadline");
+
+  // 1. Prepare Data for Chart (Status Distribution)
+  const prepareChartData = () => {
+    const statusCounts = myContests.reduce((acc, c) => {
+      const status = c.status || "Pending";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.keys(statusCounts).map((status) => ({
+      name: status,
+      value: statusCounts[status],
+    }));
+  };
+
+  const chartData = prepareChartData();
+  const COLORS = {
+    Confirmed: "#10B981", // Success Green
+    Pending: "#F59E0B", // Warning Amber
+    Rejected: "#EF4444", // Error Red
+  };
 
   const fetchMyContests = async () => {
     if (!user?.email) return;
@@ -65,7 +95,7 @@ export default function Dashboard() {
         contestType: data.contestType,
         creatorEmail: user.email,
         deadline: data.deadline.toISOString(),
-        status: "Pending", // Explicitly setting default
+        status: "Pending",
       };
 
       await axios.post(
@@ -134,6 +164,61 @@ export default function Dashboard() {
           </p>
         </header>
 
+        {/* TOP SECTION: ANALYTICS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Quick Stats */}
+          <div className="flex flex-col gap-4">
+            <div className="p-6 rounded-[2rem] bg-base-content/5 border border-base-content/10">
+              <p className="text-[10px] font-black uppercase opacity-40">
+                Total Contests
+              </p>
+              <h3 className="text-4xl font-black italic">
+                {myContests.length}
+              </h3>
+            </div>
+            <div className="p-6 rounded-[2rem] bg-base-content/5 border border-base-content/10">
+              <p className="text-[10px] font-black uppercase opacity-40">
+                Live Contests
+              </p>
+              <h3 className="text-4xl font-black italic text-success">
+                {myContests.filter((c) => c.status === "Confirmed").length}
+              </h3>
+            </div>
+          </div>
+
+          {/* Pie Chart Card */}
+          <div className="lg:col-span-2 p-6 rounded-[2.5rem] bg-base-content/5 border border-base-content/10 flex flex-col items-center">
+            <div className="w-full flex items-center gap-2 mb-2 px-4">
+              <FaChartPie className="text-primary" />
+              <h2 className="text-xs font-black uppercase italic">
+                Contest Status Overview
+              </h2>
+            </div>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[entry.name] || "#8884d8"}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT: ADD CONTEST FORM */}
           <section className="lg:col-span-5 p-8 rounded-[2.5rem] bg-base-content/5 border border-base-content/10 shadow-2xl">
@@ -164,39 +249,33 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <input
-                    type="number"
-                    {...register("price", { required: true, min: 100 })}
-                    className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
-                    placeholder="Entry Fee (৳)"
-                  />
-                </div>
-                <div className="form-control">
-                  <input
-                    type="number"
-                    {...register("prizeMoney", { required: true })}
-                    className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
-                    placeholder="Prize (৳)"
-                  />
-                </div>
+                <input
+                  type="number"
+                  {...register("price", { required: true, min: 100 })}
+                  className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                  placeholder="Entry Fee (৳)"
+                />
+                <input
+                  type="number"
+                  {...register("prizeMoney", { required: true })}
+                  className="input input-bordered rounded-xl bg-transparent font-bold border-base-content/10"
+                  placeholder="Prize (৳)"
+                />
               </div>
 
-              <div className="form-control">
-                <select
-                  {...register("contestType", { required: true })}
-                  className="select select-bordered rounded-xl bg-transparent font-bold border-base-content/10"
-                >
-                  <option value="" disabled selected>
-                    Contest Category
-                  </option>
-                  <option>Logo Design</option>
-                  <option>Gaming</option>
-                  <option>Article Writing</option>
-                  <option>Business Idea</option>
-                  <option>Photography</option>
-                </select>
-              </div>
+              <select
+                {...register("contestType", { required: true })}
+                className="select select-bordered rounded-xl bg-transparent font-bold border-base-content/10 w-full"
+              >
+                <option value="" disabled selected>
+                  Contest Category
+                </option>
+                <option>Logo Design</option>
+                <option>Gaming</option>
+                <option>Article Writing</option>
+                <option>Business Idea</option>
+                <option>Photography</option>
+              </select>
 
               <div className="form-control relative">
                 <FaCalendarAlt className="absolute right-4 top-4 opacity-30" />
@@ -215,7 +294,6 @@ export default function Dashboard() {
                 placeholder="Contest Description"
                 rows="2"
               />
-
               <textarea
                 {...register("taskInstruction", { required: true })}
                 className="textarea textarea-bordered w-full rounded-xl bg-transparent font-bold border-base-content/10"
@@ -235,7 +313,7 @@ export default function Dashboard() {
               <FaLayerGroup className="text-primary" /> My Portfolio
             </h2>
 
-            <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               {myContests.length === 0 ? (
                 <div className="p-20 text-center opacity-20 font-black italic uppercase border-2 border-dashed border-base-content/10 rounded-[2.5rem]">
                   No Contests Created
@@ -247,19 +325,19 @@ export default function Dashboard() {
                     className="p-6 rounded-[2rem] bg-base-content/5 border border-base-content/10 flex flex-col md:flex-row justify-between items-center gap-6 group hover:border-primary/50 transition-all"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center font-black text-primary text-xl italic">
+                      <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center font-black text-primary italic">
                         {c.name.charAt(0)}
                       </div>
                       <div>
-                        <h3 className="font-black uppercase italic tracking-tighter text-lg">
+                        <h3 className="font-black uppercase italic tracking-tighter">
                           {c.name}
                         </h3>
-                        <div className="flex gap-3 mt-1">
+                        <div className="flex gap-2 mt-1">
                           <span className="text-[10px] font-bold opacity-50 flex items-center gap-1 uppercase">
                             <FaAward className="text-primary" /> ৳{c.prizeMoney}
                           </span>
                           <span
-                            className={`badge badge-xs font-black text-[8px] uppercase italic p-2 ${
+                            className={`badge badge-xs font-black text-[8px] uppercase p-2 ${
                               c.status === "Confirmed"
                                 ? "badge-success"
                                 : c.status === "Rejected"
@@ -272,25 +350,24 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditContest(c)}
-                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-info hover:text-white transition-colors tooltip"
+                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-info hover:text-white tooltip"
                         data-tip="Edit"
                       >
                         <FaEdit />
                       </button>
                       <button
                         onClick={() => navigate(`/see-submissions/${c._id}`)}
-                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-primary hover:text-white transition-colors tooltip"
+                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-primary hover:text-white tooltip"
                         data-tip="Submissions"
                       >
                         <FaEye />
                       </button>
                       <button
                         onClick={() => handleDeleteContest(c._id)}
-                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-error hover:text-white transition-colors tooltip"
+                        className="btn btn-square btn-ghost btn-sm border border-base-content/10 hover:bg-error hover:text-white tooltip"
                         data-tip="Delete"
                       >
                         <FaTrash />

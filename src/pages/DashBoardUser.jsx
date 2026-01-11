@@ -6,13 +6,14 @@ import Loading from "../loading/Loading";
 import { updateProfile, reload } from "firebase/auth";
 import { auth } from "../firebase/firebase.config";
 import {
-  FaTrophy,
-  FaMedal,
-  FaEdit,
-  FaSave,
-  FaTimes,
-  FaChartPie,
-} from "react-icons/fa";
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
+import { FaTrophy, FaMedal, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 
 const DeshBoardUser = () => {
   const { user } = useContext(AuthContext);
@@ -20,56 +21,57 @@ const DeshBoardUser = () => {
   const [participatedContests, setParticipatedContests] = useState([]);
   const [winningContests, setWinningContests] = useState([]);
   const [loadingParticipated, setLoadingParticipated] = useState(true);
-  const [loadingWinnings, setLoadingWinnings] = useState(true);
 
-  // Edit Profile State
+  // Profile States
   const [isEditing, setIsEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [editedName, setEditedName] = useState(user?.displayName || "");
   const [editedPhoto, setEditedPhoto] = useState(user?.photoURL || "");
   const [editedBio, setEditedBio] = useState("Contest Enthusiast");
 
+  // Sync state if user object changes
   useEffect(() => {
-    const fetchParticipated = async () => {
+    if (user) {
+      setDisplayName(user.displayName || "");
+      setEditedName(user.displayName || "");
+      setEditedPhoto(user.photoURL || "");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchData = async () => {
       if (!user?.email) return;
       try {
         setLoadingParticipated(true);
-        const response = await axios.get(
-          `https://assignment-11-server-five-flax.vercel.app/participated-contests/${user.email}`
-        );
-        setParticipatedContests(response.data || []);
+        const [partRes, winRes] = await Promise.all([
+          axios.get(
+            `https://assignment-11-server-five-flax.vercel.app/participated-contests/${user.email}`
+          ),
+          axios.get(
+            `https://assignment-11-server-five-flax.vercel.app/winning-contests/${user.email}`
+          ),
+        ]);
+        setParticipatedContests(partRes.data || []);
+        setWinningContests(winRes.data || []);
       } catch (error) {
         console.error("Failed:", error);
       } finally {
         setLoadingParticipated(false);
       }
     };
-    fetchParticipated();
-  }, [user?.email]);
-
-  useEffect(() => {
-    const fetchWinnings = async () => {
-      if (!user?.email) return;
-      try {
-        setLoadingWinnings(true);
-        const response = await axios.get(
-          `https://assignment-11-server-five-flax.vercel.app/winning-contests/${user.email}`
-        );
-        setWinningContests(response.data || []);
-      } catch (error) {
-        console.error("Failed:", error);
-      } finally {
-        setLoadingWinnings(false);
-      }
-    };
-    fetchWinnings();
+    fetchData();
   }, [user?.email]);
 
   const totalParticipated = participatedContests.length;
   const totalWon = winningContests.length;
-  const winPercentage =
-    totalParticipated > 0
-      ? ((totalWon / totalParticipated) * 100).toFixed(1)
-      : 0;
+  const totalLost = totalParticipated - totalWon;
+
+  const chartData = [
+    { name: "Won", value: totalWon },
+    { name: "Others", value: totalLost > 0 ? totalLost : 0 },
+  ];
+
+  const COLORS = ["#10B981", "#3b82f644"];
 
   const handleSaveProfile = async () => {
     try {
@@ -77,14 +79,20 @@ const DeshBoardUser = () => {
         displayName: editedName,
         photoURL: editedPhoto,
       });
+
       await reload(auth.currentUser);
+
+      setDisplayName(editedName); // Update header instantly
+      setIsEditing(false);
+
       Swal.fire({
         icon: "success",
         title: "Profile Updated!",
         background: "var(--background-nav)",
         color: "var(--text-nav)",
+        timer: 1500,
+        showConfirmButton: false,
       });
-      setIsEditing(false);
     } catch (err) {
       Swal.fire("Error", "Failed to update profile", "error");
     }
@@ -101,34 +109,31 @@ const DeshBoardUser = () => {
       }}
     >
       <div className="max-w-7xl mx-auto space-y-16">
-        {/* Header Section */}
         <header className="text-center space-y-2">
           <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
             User <span className="text-primary">Dashboard</span>
           </h1>
           <p className="opacity-50 font-bold uppercase tracking-[0.3em] text-xs">
-            Welcome back, {user?.displayName || "Contestant"}
+            Welcome back, {displayName || "Contestant"}
           </p>
         </header>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* LEFT COLUMN: Profile & Stats */}
+          {/* LEFT COLUMN */}
           <div className="xl:col-span-1 space-y-8">
-            <section className="p-8 rounded-[2.5rem] border border-base-content/10 bg-base-content/5 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <FaChartPie size={120} />
-              </div>
-
-              <div className="flex flex-col items-center text-center relative z-10">
+            <section className="p-8 rounded-[2.5rem] border border-base-content/10 bg-base-content/5 shadow-2xl">
+              <div className="flex flex-col items-center text-center">
                 <div className="avatar mb-6">
-                  <div className="w-32 h-32 rounded-[2rem] ring ring-primary ring-offset-base-100 ring-offset-4">
+                  <div className="w-32 h-32 rounded-[2rem] ring ring-primary ring-offset-base-100 ring-offset-4 overflow-hidden">
                     <img
                       src={
                         isEditing
                           ? editedPhoto
-                          : user?.photoURL || "https://via.placeholder.com/150"
+                          : user?.photoURL ||
+                            "https://i.ibb.co/0QZCv5C/user.png"
                       }
                       alt="Profile"
+                      className="object-cover w-full h-full"
                     />
                   </div>
                 </div>
@@ -138,21 +143,20 @@ const DeshBoardUser = () => {
                     <input
                       value={editedName}
                       onChange={(e) => setEditedName(e.target.value)}
-                      className="input input-bordered w-full rounded-xl bg-transparent font-bold"
+                      className="input input-bordered w-full rounded-xl bg-transparent"
                       placeholder="Name"
                     />
                     <input
                       value={editedPhoto}
                       onChange={(e) => setEditedPhoto(e.target.value)}
-                      className="input input-bordered w-full rounded-xl bg-transparent font-bold"
+                      className="input input-bordered w-full rounded-xl bg-transparent"
                       placeholder="Photo URL"
                     />
                     <textarea
                       value={editedBio}
                       onChange={(e) => setEditedBio(e.target.value)}
-                      className="textarea textarea-bordered w-full rounded-xl bg-transparent font-bold"
+                      className="textarea textarea-bordered w-full rounded-xl bg-transparent"
                       rows="2"
-                      placeholder="Bio"
                     />
                     <div className="flex gap-2">
                       <button
@@ -172,51 +176,53 @@ const DeshBoardUser = () => {
                 ) : (
                   <>
                     <h3 className="text-2xl font-black uppercase italic tracking-tighter">
-                      {user?.displayName || user?.email}
+                      {displayName || user?.email}
                     </h3>
-                    <p className="text-xs font-bold opacity-60 uppercase tracking-widest mt-1 mb-4">
+                    <p className="text-xs font-bold opacity-60 uppercase tracking-widest mt-1 mb-6">
                       {editedBio}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                      <div className="p-4 rounded-2xl bg-base-content/5 border border-base-content/5">
-                        <p className="text-[10px] font-black opacity-40 uppercase">
-                          Participated
-                        </p>
-                        <p className="text-2xl font-black text-primary italic">
-                          {totalParticipated}
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-base-content/5 border border-base-content/5">
-                        <p className="text-[10px] font-black opacity-40 uppercase">
-                          Won
-                        </p>
-                        <p className="text-2xl font-black text-success italic">
-                          {totalWon}
-                        </p>
-                      </div>
-                    </div>
+                    {/* CHART FIX: We use a wrapper with a defined height and width */}
+                    <div className="w-full h-64 relative flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={chartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="60%"
+                            outerRadius="80%"
+                            paddingAngle={5}
+                            dataKey="value"
+                            isAnimationActive={true}
+                          >
+                            {chartData.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                                stroke="none"
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend verticalAlign="bottom" align="center" />
+                        </PieChart>
+                      </ResponsiveContainer>
 
-                    <div className="mt-8 flex flex-col items-center">
-                      <div
-                        className="radial-progress text-primary font-black italic"
-                        style={{
-                          "--value": winPercentage,
-                          "--size": "8rem",
-                          "--thickness": "1rem",
-                        }}
-                        role="progressbar"
-                      >
-                        {winPercentage}%
+                      {/* Center Stats Overlay */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
+                        <span className="text-3xl font-black italic">
+                          {totalWon}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold opacity-50">
+                          Wins
+                        </span>
                       </div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest mt-4 opacity-50">
-                        Career Win Rate
-                      </p>
                     </div>
 
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="btn btn-outline btn-sm rounded-xl mt-8 w-full border-base-content/20 uppercase font-black italic"
+                      className="btn btn-outline btn-sm rounded-xl mt-4 w-full border-base-content/20 uppercase font-black italic"
                     >
                       <FaEdit /> Edit Profile
                     </button>
@@ -226,108 +232,90 @@ const DeshBoardUser = () => {
             </section>
           </div>
 
-          {/* RIGHT COLUMN: Contests & Winnings */}
+          {/* RIGHT COLUMN */}
           <div className="xl:col-span-2 space-y-8">
-            {/* Participated Table */}
-            <section className="p-8 rounded-[2.5rem] border border-base-content/10 bg-base-content/5 shadow-2xl">
-              <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-8 flex items-center gap-3">
-                <FaMedal className="text-primary" /> Participated Contests
+            <section className="p-8 rounded-[2.5rem] border border-base-content/10 bg-base-content/5 shadow-xl">
+              <h2 className="text-2xl font-black uppercase italic mb-8 flex items-center gap-3">
+                <FaMedal className="text-primary" /> Participation Log
               </h2>
-              {participatedContests.length === 0 ? (
-                <div className="text-center py-10 opacity-30 italic font-bold uppercase">
-                  No records found
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="table w-full">
-                    <thead>
+              <div className="overflow-x-auto">
+                <table className="table w-full">
+                  <thead>
+                    <tr
+                      className="border-b border-base-content/10"
+                      style={{ color: "var(--text-nav)" }}
+                    >
+                      <th className="bg-transparent uppercase font-black italic">
+                        Contest
+                      </th>
+                      <th className="bg-transparent uppercase font-black italic text-center">
+                        Status
+                      </th>
+                      <th className="bg-transparent uppercase font-black italic text-right">
+                        Fee
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {participatedContests.map((c) => (
                       <tr
-                        className="border-b border-base-content/10"
-                        style={{ color: "var(--text-nav)" }}
+                        key={c._id}
+                        className="border-b border-base-content/5 hover:bg-base-content/5"
                       >
-                        <th className="bg-transparent uppercase font-black italic">
-                          Contest Name
-                        </th>
-                        <th className="bg-transparent uppercase font-black italic text-center">
-                          Status
-                        </th>
-                        <th className="bg-transparent uppercase font-black italic text-right">
-                          Prize
-                        </th>
+                        <td className="font-bold uppercase italic text-xs">
+                          {c.name}
+                        </td>
+                        <td className="text-center">
+                          <span
+                            className={`badge font-black text-[9px] p-3 rounded-lg ${
+                              new Date() > new Date(c.deadline)
+                                ? "badge-error"
+                                : "badge-success"
+                            }`}
+                          >
+                            {new Date() > new Date(c.deadline)
+                              ? "CLOSED"
+                              : "ACTIVE"}
+                          </span>
+                        </td>
+                        <td className="text-right font-black text-primary italic">
+                          ৳{c.entryFee || 0}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {participatedContests.map((contest) => (
-                        <tr
-                          key={contest._id}
-                          className="border-b border-base-content/5 hover:bg-base-content/5"
-                        >
-                          <td className="font-bold uppercase italic tracking-tighter">
-                            {contest.name}
-                          </td>
-                          <td className="text-center">
-                            <span
-                              className={`badge font-black text-[10px] italic py-3 px-4 rounded-lg ${
-                                new Date() > new Date(contest.deadline)
-                                  ? "badge-error"
-                                  : "badge-success"
-                              }`}
-                            >
-                              {new Date() > new Date(contest.deadline)
-                                ? "CLOSED"
-                                : "ACTIVE"}
-                            </span>
-                          </td>
-                          <td className="text-right font-black text-primary italic">
-                            ৳{contest.prizeMoney}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
 
-            {/* Winning Contests Grid */}
             <section>
-              <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-8 flex items-center gap-3">
-                <FaTrophy className="text-warning" /> Hall of Fame 🏆
+              <h2 className="text-2xl font-black uppercase italic mb-8 flex items-center gap-3">
+                <FaTrophy className="text-warning" /> Victory Shelf
               </h2>
-              {winningContests.length === 0 ? (
-                <div className="p-12 rounded-[2.5rem] border-2 border-dashed border-base-content/10 text-center opacity-30 italic font-bold uppercase">
-                  The trophy cabinet is empty. Keep competing!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {winningContests.map((win) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {winningContests.length === 0 ? (
+                  <div className="col-span-2 p-12 rounded-[2.5rem] border-2 border-dashed border-base-content/10 text-center opacity-30 italic font-bold uppercase">
+                    No trophies yet. Keep competing!
+                  </div>
+                ) : (
+                  winningContests.map((win) => (
                     <div
                       key={win._id}
-                      className="group p-6 rounded-[2rem] bg-gradient-to-br from-warning/20 to-transparent border border-warning/20 hover:scale-[1.02] transition-all"
+                      className="p-6 rounded-[2rem] bg-gradient-to-br from-warning/20 to-transparent border border-warning/20 flex justify-between items-center transition-transform hover:scale-105"
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-xl font-black uppercase italic tracking-tighter">
-                            {win.name}
-                          </h3>
-                          <p className="text-[10px] font-bold opacity-60 uppercase mt-1">
-                            Claimed on:{" "}
-                            {new Date(
-                              win.winnerDeclaredAt || win.deadline
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <FaTrophy className="text-3xl text-warning group-hover:rotate-12 transition-transform" />
-                      </div>
-                      <div className="mt-6">
-                        <p className="text-3xl font-black text-warning italic tracking-tighter">
+                      <div>
+                        <h3 className="text-md font-black uppercase italic">
+                          {win.name}
+                        </h3>
+                        <p className="text-2xl font-black text-warning italic">
                           ৳{win.prizeMoney}
                         </p>
                       </div>
+                      <FaTrophy className="text-3xl text-warning" />
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </section>
           </div>
         </div>

@@ -4,8 +4,10 @@ import {
   FaLinkedinIn,
   FaTwitter,
   FaInstagram,
+  FaGithub,
 } from "react-icons/fa";
 import FullLogo from "../assets/FullLogo.png";
+import { Link } from "react-router";
 
 const Footer = () => {
   return (
@@ -63,19 +65,28 @@ const Footer = () => {
             </h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <Link
+                  href="/privacy"
+                  className="hover:text-primary transition-colors"
+                >
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
-                  Terms of Service
-                </a>
+                <Link
+                  href="/about"
+                  className="hover:text-primary transition-colors"
+                >
+                  About
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <Link
+                  href="/contact"
+                  className="hover:text-primary transition-colors"
+                >
                   Contact Us
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -88,19 +99,20 @@ const Footer = () => {
             <div className="flex gap-4">
               {[
                 {
-                  icon: <FaFacebookF />,
-                  link: "#",
-                  color: "hover:bg-blue-600",
-                },
-                {
                   icon: <FaLinkedinIn />,
-                  link: "#",
+                  // Added https:// here
+                  link: "https://www.linkedin.com/in/walid-rahman-rajdee-029b08264",
                   color: "hover:bg-blue-700",
                 },
-                { icon: <FaTwitter />, link: "#", color: "hover:bg-sky-500" },
+                
                 {
-                  icon: <FaInstagram />,
-                  link: "#",
+                  icon: <FaTwitter />,
+                  link: "https://x.com/RahmanRazdee",
+                  color: "hover:bg-sky-500",
+                },
+                {
+                  icon: <FaGithub />,
+                  link: "https://github.com/Razdee01",
                   color: "hover:bg-pink-600",
                 },
               ].map((social, i) => (
@@ -119,7 +131,6 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-base-content/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs opacity-50 font-medium">
           <p>© 2026 ContestHub. All rights reserved.</p>
-         
         </div>
       </div>
     </footer>

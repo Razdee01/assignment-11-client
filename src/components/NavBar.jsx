@@ -28,8 +28,8 @@ const NavBar = () => {
 
   // Logic for NavLink Styling
   const navLinkStyles = ({ isActive }) =>
-    `px-3 py-2 transition-all duration-300 custom-nav-link ${
-      isActive ? "active-link" : ""
+    `px-4 py-2 transition-all duration-300 uppercase text-xs tracking-widest font-bold hover:text-primary flex items-center gap-1 ${
+      isActive ? "active-link scale-110" : "opacity-60 hover:opacity-100"
     }`;
 
   const navItems = (
@@ -45,13 +45,23 @@ const NavBar = () => {
         </NavLink>
       </li>
       <li>
-        <NavLink to="/how-it-works" className={navLinkStyles}>
-          How It Works
+        <NavLink to="/leaderboard" className={navLinkStyles}>
+          Leaderboard
         </NavLink>
       </li>
       <li>
-        <NavLink to="/leaderboard" className={navLinkStyles}>
-          Leaderboard
+        <NavLink to="/about" className={navLinkStyles}>
+          About
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to="/contact" className={navLinkStyles}>
+          Contact
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to="/privacy" className={navLinkStyles}>
+          Privacy
         </NavLink>
       </li>
     </>
